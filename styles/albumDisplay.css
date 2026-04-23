@@ -1,0 +1,69 @@
+/* src/styles/AlbumDisplay.css */
+.album-container {
+    padding: 30px;
+    background-color: #121212;
+}
+
+.view-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #282828;
+    padding-bottom: 15px;
+    margin-bottom: 30px;
+}
+
+.grid-layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 25px;
+}
+
+.album-card {
+    background-color: #1e1e1e;
+    padding: 15px;
+    border-radius: 4px;
+    transition: background 0.3s ease, transform 0.2s ease;
+    cursor: pointer;
+}
+
+.album-card:hover {
+    background-color: #282828;
+    transform: translateY(-5px);
+}
+
+.cover-art {
+    width: 100%;
+    aspect-ratio: 1/1;
+    background-color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 2px;
+    margin-bottom: 15px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+}
+
+.album-title {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.album-subtitle {
+    font-size: 12px;
+    color: #b3b3b3;
+    margin: 5px 0 10px 0;
+}
+
+.rating-badge {
+    background-color: #ff4757;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    font-weight: bold;
+}
