@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>No Break</title>
+    <title>No Break - Descargas</title>
     <link rel="stylesheet" href="estilo.css">
 </head>
 <body>
@@ -52,18 +52,20 @@
     </header>
 
     <main class="contenedor-central">
-        <h1 class="titulo">No Break</h1>
-        <!-- Contenedor para agrupar los botones de navegación -->
-        <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
-            <a href="reproductor.html" class="enlace-reproductor">Acceder al reproductor web</a>
-            
-            <!-- Nuevo botón para la sección de descargas -->
-            <a href="descargable.html" class="enlace-reproductor" style="border-style: dashed; opacity: 0.9;">
-                Descargar App 📥
-            </a>
-        </div>
+        <h1 class="titulo">DESCARGAS</h1>
+        <p style="margin-bottom: 30px; max-width: 400px; text-align: center; line-height: 1.6;">
+            Obtén la versión de escritorio de <strong>No Break</strong> para una experiencia sin interrupciones.
+        </p>
+        
+        <!-- Botón de descarga -->
+        <a href="#" class="enlace-reproductor" style="background: var(--texto-principal); color: black;" onclick="alert('Iniciando descarga simulada...')">
+            Descargar para Windows (.exe)
+        </a>
+
+        <a href="menu.html" class="boton-cancelar" style="margin-top: 30px; text-decoration: none;">Volver al inicio</a>
     </main>
 
+    <!-- EL MODAL CAPTCHA (Copiado de los anteriores para que el JS no de error) -->
     <div id="modal-captcha" class="modal-overlay oculto">
         <div class="modal-contenido">
             <h3>Seguridad</h3>
