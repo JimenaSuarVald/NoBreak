@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No Break</title>
+    <link rel="stylesheet" href="estilo.css">
+</head>
+<body>
+
+    <header>
+        <div class="contenedor-herramientas">
+            <button id="btn-toggle-tema" class="boton-circular" title="Cambiar tema">🌓</button>
+
+            <div class="menu-desplegable">
+                <button class="boton-menu" id="btn-usuario">Cuenta 👤</button>
+                <div class="contenido-desplegable" id="panel-usuario">
+                    <div id="auth-tabs">
+                        <div class="tabs-botones">
+                            <button onclick="cambiarTab('login')" class="tab-link activo">Entrar</button>
+                            <button onclick="cambiarTab('registro')" class="tab-link">Registro</button>
+                        </div>
+                        
+                        <form id="form-login" class="auth-form">
+                            <div id="error-login" class="mensaje-error"></div>
+                            <input type="email" id="login-correo" placeholder="Correo">
+                            <div class="password-container">
+                                <input type="password" id="login-pass" placeholder="Contraseña">
+                                <span class="toggle-pass" onclick="togglePassword('login-pass')">👁️</span>
+                            </div>
+                            <button type="submit" class="boton-accion">Entrar</button>
+                        </form>
+
+                        <form id="form-registro" class="auth-form oculto">
+                            <div id="error-registro" class="mensaje-error"></div>
+                            <input type="text" id="reg-nombre" placeholder="Nombre de usuario">
+                            <input type="email" id="reg-correo" placeholder="Correo (@ .com/.es)">
+                            <div class="password-container">
+                                <input type="password" id="reg-pass" placeholder="Contraseña">
+                                <span class="toggle-pass" onclick="togglePassword('reg-pass')">👁️</span>
+                            </div>
+                            <button type="submit" class="boton-accion">Crear Cuenta</button>
+                        </form>
+                    </div>
+                    <div id="usuario-logueado" class="oculto">
+                        <p>Sesión: <strong id="nombre-user"></strong></p>
+                        <button id="btn-logout" class="boton-accion secondary">Cerrar Sesión</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="contenedor-central">
+        <h1 class="titulo">No Break</h1>
+        <!-- Contenedor para agrupar los botones de navegación -->
+        <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
+            <a href="reproductor.html" class="enlace-reproductor">Acceder al reproductor web</a>
+            
+            <!-- Nuevo botón para la sección de descargas -->
+            <a href="descargable.html" class="enlace-reproductor" style="border-style: dashed; opacity: 0.9;">
+                Descargar App 📥
+            </a>
+        </div>
+    </main>
+
+    <div id="modal-captcha" class="modal-overlay oculto">
+        <div class="modal-contenido">
+            <h3>Seguridad</h3>
+            <p>Introduce el código:</p>
+            <div class="captcha-box-modal">
+                <span id="captcha-num-modal" class="numero-captcha"></span>
+                <input type="text" id="captcha-input-modal" placeholder="Código">
+            </div>
+            <div id="error-captcha-modal" class="mensaje-error"></div>
+            <button id="btn-confirmar-captcha" class="boton-accion">Verificar</button>
+            <button onclick="cerrarModal()" class="boton-cancelar">Cancelar</button>
+        </div>
+    </div>
+
+    <script src="javascript.js"></script>
+</body>
+</html>
