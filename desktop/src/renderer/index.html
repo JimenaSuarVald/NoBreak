@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; img-src 'self' data: http://127.0.0.1:* https:; media-src 'self' http://127.0.0.1:*; connect-src 'self' http://127.0.0.1:*; style-src 'self' 'unsafe-inline'; script-src 'self'">
+    <title>NoBreak Player</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <!-- LOGIN SCREEN -->
+    <section id="login-screen" class="screen">
+        <div class="login-card">
+            <h1 id="login-title">NoBreak</h1>
+            <p id="login-sub" class="muted">Cargando…</p>
+            <form id="login-form" autocomplete="on">
+                <label class="muted small">Usuario</label>
+                <input id="login-user" type="text" autocomplete="username" required>
+                <label class="muted small">Contraseña</label>
+                <input id="login-pass" type="password" autocomplete="current-password" required minlength="6">
+                <label id="login-confirm-label" class="muted small hidden">Repite la contraseña</label>
+                <input id="login-confirm" type="password" autocomplete="new-password" minlength="6" class="hidden">
+                <div id="login-error" class="error"></div>
+                <button id="login-submit" type="submit">Entrar</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- FOLDER PROMPT -->
+    <section id="folder-screen" class="screen hidden">
+        <div class="login-card">
+            <h2>Carpeta de música</h2>
+            <p class="muted">Elige la carpeta donde tienes tu música. NoBreak escaneará esa carpeta y todas sus subcarpetas.</p>
+            <button id="folder-pick" type="button">Seleccionar carpeta…</button>
+            <div id="folder-error" class="error"></div>
+        </div>
+    </section>
+
+    <!-- MAIN UI -->
+    <section id="app-screen" class="screen hidden">
+        <header class="app-header">
+            <nav class="top-tabs">
+                <button class="tab active" data-tab="albums">Álbumes</button>
+                <button class="tab" data-tab="artists">Artistas</button>
+                <button class="tab" data-tab="genres">Géneros</button>
+                <button class="tab" data-tab="playlists">Listas</button>
+            </nav>
+            <div class="header-tools">
+                <button id="theme-toggle" class="icon-btn" title="Cambiar tema" aria-label="Cambiar tema">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                        <path d="M12 4.5a7.5 7.5 0 0 0 0 15 7.5 7.5 0 0 1 0-15zm0-2a9.5 9.5 0 1 0 9.5 9.5A9.5 9.5 0 0 0 12 2.5z"/>
+                    </svg>
+                </button>
+                <span id="user-badge" class="muted small"></span>
+                <input id="search" type="search" placeholder="Buscar…" autocomplete="off">
+            </div>
+        </header>
+
+        <div id="status-bar" class="status-bar muted small"></div>
+
+        <main id="main-grid" class="album-grid"></main>
+
+        <!-- Artist description strip (Wikipedia / Last.fm). Hidden until a song is playing. -->
+        <div id="artist-strip" class="artist-strip hidden">
+            <div class="ai-thumb" id="ai-thumb"></div>
+            <div class="ai-body">
+                <div class="ai-name" id="ai-name"></div>
+                <div class="ai-extract" id="ai-extract"></div>
+                <div class="ai-links">
+                    <a class="ai-link" id="ai-link-wp" href="#" target="_blank" rel="noopener">Wikipedia</a>
+                    <a class="ai-link" id="ai-link-lf" href="#" target="_blank" rel="noopener">Last.fm</a>
+                    <a class="ai-link" id="ai-link-rym" href="#" target="_blank" rel="noopener">RateYourMusic</a>
+                    <span class="ai-source muted small" id="ai-source"></span>
+                </div>
+            </div>
+            <button class="ai-toggle" id="ai-toggle" title="Expandir">▾</button>
+        </div>
+
+        <footer class="now-playing">
+            <div class="np-cover" id="np-cover"></div>
+            <div class="np-info">
+                <div id="np-title" class="np-title">Selecciona una canción</div>
+                <div id="np-meta"  class="np-meta muted small"></div>
+            </div>
+            <audio id="audio" controls preload="metadata"></audio>
+        </footer>
+
+        <!-- Add-to-playlist popover. JS positions and shows it near the clicked "+" button. -->
+        <div id="add-popover" class="popover hidden" role="menu" aria-label="Añadir a playlist"></div>
+    </section>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

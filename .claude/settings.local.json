@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(awk '{print $NF}')",
+      "Bash(where winget *)",
+      "Bash(winget --version)",
+      "Bash(winget install *)",
+      "Bash(winget search *)",
+      "PowerShell(mvn *)",
+      "Bash(git check-ignore *)"
+    ]
+  }
+}

@@ -10,13 +10,13 @@ function BottomPlayer() {
       </div>
 
       <div className="playback-controls">
-        <button style={btnStyle} aria-label="Anterior">⏮</button>
-        <button style={{...btnStyle, fontSize: '24px', margin: '0 15px'}} aria-label="Reproducir/Pausar">⏯</button>
-        <button style={btnStyle} aria-label="Siguiente">⏭</button>
+        <button style={btnStyle} aria-label="Anterior">Ant</button>
+        <button style={{...btnStyle, fontSize: '24px', margin: '0 15px'}} aria-label="Reproducir/Pausar">Play</button>
+        <button style={btnStyle} aria-label="Siguiente">Sig</button>
       </div>
 
       <div className="volume-control">
-        🔊 <input type="range" min="0" max="100" aria-label="Control de Volumen" />
+        Vol <input type="range" min="0" max="100" aria-label="Control de Volumen" />
       </div>
     </div>
   );

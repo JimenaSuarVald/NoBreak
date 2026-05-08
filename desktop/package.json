@@ -1,0 +1,61 @@
+{
+  "name": "nobreak-desktop",
+  "version": "0.1.0",
+  "description": "NoBreak desktop player (Electron). Local music library + login + web server so the existing browser frontend can connect with the same credentials.",
+  "main": "main.js",
+  "author": "NoBreak",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "rebuild": "electron-builder install-app-deps",
+    "postinstall": "electron-builder install-app-deps",
+    "predist": "node copy-web.js",
+    "dist": "electron-packager . NoBreak --platform=win32 --arch=x64 --out=dist --overwrite --prune=true"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "chokidar": "^3.6.0",
+    "express": "^4.21.0",
+    "music-metadata": "^7.14.0"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.0.0",
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.nobreak.desktop",
+    "productName": "NoBreak",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "db.js",
+      "auth.js",
+      "scanner.js",
+      "watcher.js",
+      "webserver.js",
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false
+    }
+  }
+}

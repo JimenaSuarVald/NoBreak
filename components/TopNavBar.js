@@ -21,7 +21,7 @@ function TopNavBar({ tabs, activeTabId, onTabChange, onAddTab, onRemoveTab }) {
                 onRemoveTab(tab.id);
               }}
             >
-              ✖
+              x
             </span>
           )}
         </button>
@@ -29,7 +29,7 @@ function TopNavBar({ tabs, activeTabId, onTabChange, onAddTab, onRemoveTab }) {
       
       {/* Botón para añadir nuevas pestañas */}
       <button className="tab" onClick={onAddTab}>
-        ➕ Nueva
+        Nueva
       </button>
     </div>
   );
