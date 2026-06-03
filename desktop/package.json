@@ -27,6 +27,11 @@
   "build": {
     "appId": "com.nobreak.desktop",
     "productName": "NoBreak",
+    "compression": "maximum",
+    "electronLanguages": [
+      "es",
+      "en-US"
+    ],
     "directories": {
       "output": "dist"
     },
@@ -38,6 +43,11 @@
       "scanner.js",
       "watcher.js",
       "webserver.js",
+      "playlists.js",
+      "artistinfo.js",
+      "lastfm.js",
+      "musicbrainz.js",
+      ".env",
       "src/**/*",
       "assets/**/*",
       "package.json"
@@ -49,8 +59,17 @@
           "arch": [
             "x64"
           ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
         }
       ]
+    },
+    "portable": {
+      "artifactName": "NoBreak-${version}-portable.exe"
     },
     "nsis": {
       "oneClick": false,

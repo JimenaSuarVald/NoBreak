@@ -4,19 +4,36 @@
 const db = require('./db');
 
 function listPlaylists() {
-    return db.get().prepare(`
-        SELECT p.id, p.name, p.created_at, p.updated_at,
+    const rows = db.get().prepare(`
+        SELECT p.id, p.name, p.cover_path, p.created_at, p.updated_at,
                COUNT(pt.track_id) AS trackCount
         FROM playlists p
         LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.id
         GROUP BY p.id
         ORDER BY p.updated_at DESC
     `).all();
+    // Hasta 9 portadas únicas (por álbum, no por pista) para el collage.
+    const sampleStmt = db.get().prepare(`
+        SELECT t.id, t.cover_path
+        FROM playlist_tracks pt
+        JOIN tracks t ON t.id = pt.track_id
+        WHERE pt.playlist_id = ? AND t.cover_path IS NOT NULL
+        GROUP BY t.cover_path
+        ORDER BY MIN(pt.position)
+        LIMIT 9
+    `);
+    return rows.map(p => ({
+        id: p.id, name: p.name,
+        created_at: p.created_at, updated_at: p.updated_at,
+        trackCount: p.trackCount,
+        coverUrl: p.cover_path ? `/playlist-cover/${p.id}` : null,
+        sampleCovers: sampleStmt.all(p.id).map(s => `/cover/${s.id}`),
+    }));
 }
 
 function getPlaylist(id) {
     const pl = db.get().prepare(`
-        SELECT id, name, created_at, updated_at FROM playlists WHERE id = ?
+        SELECT id, name, cover_path, created_at, updated_at FROM playlists WHERE id = ?
     `).get(id);
     if (!pl) return null;
     const tracks = db.get().prepare(`
@@ -27,8 +44,23 @@ function getPlaylist(id) {
         WHERE pt.playlist_id = ?
         ORDER BY pt.position
     `).all(id);
+    // Hasta 9 portadas únicas (por álbum) para el collage del drawer.
+    const sampleCovers = [];
+    const seenAlb = new Set();
+    for (const t of tracks) {
+        if (!t.cover_path) continue;
+        const k = (t.album || '').toLowerCase().trim()
+                + '\x1f' + (t.artista || '').toLowerCase().trim();
+        if (seenAlb.has(k)) continue;
+        seenAlb.add(k);
+        sampleCovers.push(`/cover/${t.id}`);
+        if (sampleCovers.length >= 9) break;
+    }
     return {
         ...pl,
+        coverUrl: pl.cover_path ? `/playlist-cover/${pl.id}` : null,
+        cover_path: undefined,
+        sampleCovers,
         trackCount: tracks.length,
         tracks: tracks.map(t => ({
             id: t.id,

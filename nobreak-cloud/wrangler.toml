@@ -1,0 +1,19 @@
+name = "nobreak-cloud"
+main = "src/index.js"
+compatibility_date = "2025-05-13"
+# Account ID añadido para evitar que wrangler intente listar cuentas con cada
+# comando (operación que requiere permiso "User Details: Read" que el API
+# token actual no tiene). Sólo evita la llamada extra — los permisos del token
+# real determinan qué puedes hacer.
+account_id = "f4041e5549fb184fff60597788099564"
+
+# Binding a la D1 creada con `wrangler d1 create nobreak-db`. Dentro del
+# Worker se accede como env.nobreak_db (prepare, bind, run, etc).
+[[d1_databases]]
+binding = "nobreak_db"
+database_name = "nobreak-db"
+database_id = "54d9c97a-1229-49d6-bf46-765f8f21263a"
+
+# CORS y autenticación las gestionamos en JS — sin secretos por ahora.
+# Si en el futuro queremos firmar tokens JWT con un secreto, usaremos:
+#   wrangler secret put JWT_SIGNING_KEY

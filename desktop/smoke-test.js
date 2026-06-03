@@ -271,6 +271,251 @@ function postJson(pathname, body, headers = {}) {
         check('DELETE playlist → 204', delPl.statusCode === 204);
     }
 
+    console.log('\n--- ALBUM RATING (per-user) ---');
+    // Re-fetch library to find an album to rate.
+    const libRated0 = await get('/api/library', { Authorization: 'Bearer ' + httpToken });
+    let libRated0Json = null; try { libRated0Json = JSON.parse(libRated0.body.toString('utf8')); } catch {}
+    const albumForRating = libRated0Json?.albums?.[0];
+    if (!albumForRating) {
+        console.log('  (no albums to rate, skipping)');
+    } else {
+        console.log(`  using album id=${albumForRating.id} "${albumForRating.titulo}"`);
+        check('library albums include rating field (initial null)',
+            'rating' in albumForRating && albumForRating.rating === null,
+            `rating=${albumForRating.rating}`);
+
+        // PUT a rating
+        const putRes = await new Promise((resolve, reject) => {
+            const data = Buffer.from(JSON.stringify({ rating: 4.5 }));
+            const r = http.request({
+                host: '127.0.0.1', port: 8080,
+                path: '/api/albums/' + albumForRating.id + '/rating',
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': data.length,
+                    Authorization: 'Bearer ' + httpToken,
+                },
+            }, (res) => {
+                const chunks = [];
+                res.on('data', (c) => chunks.push(c));
+                res.on('end', () => {
+                    let parsed = null;
+                    try { parsed = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch {}
+                    resolve({ status: res.statusCode, body: parsed });
+                });
+            });
+            r.on('error', reject); r.end(data);
+        });
+        check('PUT rating 4.5 → 200', putRes.status === 200, `status=${putRes.status}`);
+        check('PUT response echoes 4.5', putRes.body?.rating === 4.5);
+
+        // GET rating
+        const getRes = await get('/api/albums/' + albumForRating.id + '/rating',
+            { Authorization: 'Bearer ' + httpToken });
+        let getJson = null; try { getJson = JSON.parse(getRes.body.toString('utf8')); } catch {}
+        check('GET rating → 200', getRes.status === 200);
+        check('GET rating returns 4.5', getJson?.rating === 4.5);
+
+        // Library reflects rating
+        const lib2 = await get('/api/library', { Authorization: 'Bearer ' + httpToken });
+        let lib2Json = null; try { lib2Json = JSON.parse(lib2.body.toString('utf8')); } catch {}
+        const updated = lib2Json?.albums?.find(a => a.id === albumForRating.id);
+        check('library reflects updated rating', updated?.rating === 4.5,
+            `rating=${updated?.rating}`);
+
+        // Out-of-range rejected
+        const bad = await new Promise((resolve, reject) => {
+            const data = Buffer.from(JSON.stringify({ rating: 9 }));
+            const r = http.request({
+                host: '127.0.0.1', port: 8080,
+                path: '/api/albums/' + albumForRating.id + '/rating',
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': data.length,
+                    Authorization: 'Bearer ' + httpToken,
+                },
+            }, (res) => { res.resume(); res.on('end', () => resolve(res)); });
+            r.on('error', reject); r.end(data);
+        });
+        check('PUT rating 9 → 400', bad.statusCode === 400);
+
+        // Half-step rounding (0.7 → 0.5)
+        const round = await new Promise((resolve, reject) => {
+            const data = Buffer.from(JSON.stringify({ rating: 0.7 }));
+            const r = http.request({
+                host: '127.0.0.1', port: 8080,
+                path: '/api/albums/' + albumForRating.id + '/rating',
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': data.length,
+                    Authorization: 'Bearer ' + httpToken,
+                },
+            }, (res) => {
+                const chunks = [];
+                res.on('data', (c) => chunks.push(c));
+                res.on('end', () => {
+                    let parsed = null;
+                    try { parsed = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch {}
+                    resolve({ status: res.statusCode, body: parsed });
+                });
+            });
+            r.on('error', reject); r.end(data);
+        });
+        check('PUT rating 0.7 → rounded to 0.5', round.body?.rating === 0.5,
+            `body=${JSON.stringify(round.body)}`);
+
+        // DELETE rating
+        const del = await new Promise((resolve, reject) => {
+            const r = http.request({
+                host: '127.0.0.1', port: 8080,
+                path: '/api/albums/' + albumForRating.id + '/rating',
+                method: 'DELETE',
+                headers: { Authorization: 'Bearer ' + httpToken },
+            }, (res) => { res.resume(); res.on('end', () => resolve(res)); });
+            r.on('error', reject); r.end();
+        });
+        check('DELETE rating → 204', del.statusCode === 204);
+
+        const after = await get('/api/albums/' + albumForRating.id + '/rating',
+            { Authorization: 'Bearer ' + httpToken });
+        let afterJson = null; try { afterJson = JSON.parse(after.body.toString('utf8')); } catch {}
+        check('GET rating after delete → null', afterJson?.rating === null);
+    }
+
+    console.log('\n--- PROFILE v3 (display name, description, widgets, HTML) ---');
+    const reqPatch = (body) => new Promise((resolve, reject) => {
+        const data = Buffer.from(JSON.stringify(body));
+        const r = http.request({
+            host: '127.0.0.1', port: 8080, path: '/auth/me', method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Content-Length': data.length,
+                Authorization: 'Bearer ' + httpToken,
+            },
+        }, (res) => {
+            const chunks = [];
+            res.on('data', (c) => chunks.push(c));
+            res.on('end', () => {
+                let parsed = null;
+                try { parsed = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch {}
+                resolve({ status: res.statusCode, body: parsed });
+            });
+        });
+        r.on('error', reject); r.end(data);
+    });
+
+    const widgets = {
+        widgets: [
+            { type: 'description', size: 'full' },
+            { type: 'top-artists', size: 'medium' },
+            { type: 'top-tracks',  size: 'medium' },
+        ],
+    };
+    const patch1 = await reqPatch({
+        displayName: 'Test Tester',
+        description: 'Estoy aquí para probar.',
+        profileWidgets: widgets,
+        profileHtml: '<h1>Hola</h1>',
+        advancedMode: false,
+    });
+    check('PATCH /auth/me → 200', patch1.status === 200);
+    check('me.displayName se persiste', patch1.body?.displayName === 'Test Tester');
+    check('me.description se persiste', patch1.body?.description === 'Estoy aquí para probar.');
+    check('me.profileWidgets se persiste', JSON.stringify(patch1.body?.profileWidgets) === JSON.stringify(widgets));
+    check('me.profileHtml se persiste', patch1.body?.profileHtml === '<h1>Hola</h1>');
+    check('me.advancedMode false', patch1.body?.advancedMode === false);
+
+    const badEmail = await reqPatch({ email: 'no-es-correo' });
+    check('PATCH email inválido → 400', badEmail.status === 400);
+
+    const pubProfile = await get('/api/users/' + encodeURIComponent('test'),
+        { Authorization: 'Bearer ' + httpToken });
+    let pubJson = null; try { pubJson = JSON.parse(pubProfile.body.toString('utf8')); } catch {}
+    check('GET /api/users/:username → 200', pubProfile.status === 200);
+    check('public profile owner sees email', pubJson?.email === 'test' || pubJson?.email === null /* ok if no email saved */);
+    check('public profile isOwner true', pubJson?.isOwner === true);
+    check('public profile widgets array', Array.isArray(pubJson?.profileWidgets?.widgets));
+    check('public profile incluye topArtists', Array.isArray(pubJson?.topArtists));
+    check('public profile incluye topTracks', Array.isArray(pubJson?.topTracks));
+    check('public profile incluye topAlbums', Array.isArray(pubJson?.topAlbums));
+    check('public profile incluye friends', Array.isArray(pubJson?.friends));
+
+    const noUser = await get('/api/users/no-existe', { Authorization: 'Bearer ' + httpToken });
+    check('GET /api/users/<inexistente> → 404', noUser.status === 404);
+
+    console.log('\n--- LISTEN con trackId + top-tracks ---');
+    const someTrack = db.get().prepare(
+        `SELECT id, artista FROM tracks WHERE artista IS NOT NULL AND artista <> '' LIMIT 1`
+    ).get();
+    if (someTrack) {
+        // Manda 30 s con newPlay=true → cuenta 1 reproducción + 30 s.
+        const listen1 = await postJson('/api/listen', {
+            artist: someTrack.artista, ms: 30000, trackId: someTrack.id, newPlay: true,
+        }, { Authorization: 'Bearer ' + httpToken });
+        check('POST /api/listen con trackId → 204',
+            listen1.status === 204,
+            `status=${listen1.status} body=${JSON.stringify(listen1.body)}`);
+
+        const tt = await get('/api/profile/top-tracks', { Authorization: 'Bearer ' + httpToken });
+        let ttJson = []; try { ttJson = JSON.parse(tt.body.toString('utf8')); } catch {}
+        check('GET /api/profile/top-tracks → 200', tt.status === 200);
+        check('top-tracks tiene la canción reproducida',
+            ttJson.some(t => t.id === someTrack.id && t.playCount >= 1),
+            JSON.stringify(ttJson));
+    }
+
+    console.log('\n--- FRIENDS ---');
+    auth.createUser('friend1', 'amigopass', { email: 'f1@x.com' });
+    auth.createUser('friend2', 'amigopass2');
+    const before = await get('/api/friends', { Authorization: 'Bearer ' + httpToken });
+    let beforeJson = []; try { beforeJson = JSON.parse(before.body.toString('utf8')); } catch {}
+    check('GET /api/friends inicial vacío', beforeJson.length === 0);
+
+    const addF1 = await postJson('/api/friends', { username: 'friend1' },
+        { Authorization: 'Bearer ' + httpToken });
+    check('POST /api/friends friend1 → 201', addF1.status === 201);
+
+    const addSelf = await postJson('/api/friends', { username: 'test' },
+        { Authorization: 'Bearer ' + httpToken });
+    check('POST /api/friends self → 400', addSelf.status === 400);
+
+    const noUserFriend = await postJson('/api/friends', { username: 'no-existe' },
+        { Authorization: 'Bearer ' + httpToken });
+    check('POST /api/friends inexistente → 404', noUserFriend.status === 404);
+
+    const after1 = await get('/api/friends', { Authorization: 'Bearer ' + httpToken });
+    let after1Json = []; try { after1Json = JSON.parse(after1.body.toString('utf8')); } catch {}
+    check('GET /api/friends tras añadir → contiene friend1',
+        after1Json.some(f => f.username === 'friend1'),
+        JSON.stringify(after1Json));
+
+    // friend1 debería verse a "test" como amigo (relación bidireccional).
+    const friend1Sess = auth.issueSession(auth.userByUsername('friend1').id);
+    const f1View = await get('/api/friends', { Authorization: 'Bearer ' + friend1Sess.token });
+    let f1ViewJson = []; try { f1ViewJson = JSON.parse(f1View.body.toString('utf8')); } catch {}
+    check('relación bidireccional: friend1 ve a test',
+        f1ViewJson.some(f => f.username === 'test'));
+
+    const friendId = after1Json[0]?.id;
+    if (friendId) {
+        const del = await new Promise((resolve, reject) => {
+            const r = http.request({
+                host: '127.0.0.1', port: 8080,
+                path: '/api/friends/' + friendId, method: 'DELETE',
+                headers: { Authorization: 'Bearer ' + httpToken },
+            }, (res) => { res.resume(); res.on('end', () => resolve(res)); });
+            r.on('error', reject); r.end();
+        });
+        check('DELETE /api/friends/:id → 204', del.statusCode === 204);
+
+        const after2 = await get('/api/friends', { Authorization: 'Bearer ' + httpToken });
+        let after2Json = []; try { after2Json = JSON.parse(after2.body.toString('utf8')); } catch {}
+        check('GET /api/friends tras quitar → vacío', after2Json.length === 0);
+    }
+
     console.log('\n--- STATIC SITE ---');
     if (fs.existsSync(webDir)) {
         const menu = await get('/menu.html');

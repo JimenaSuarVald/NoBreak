@@ -1,17 +1,20 @@
 /* Theme variables. The drawer uses its own --drawer-bg/--drawer-fg pair so
    the dynamic color extracted from the cover survives a theme toggle. */
 :root {
-    --bg:        #121212;
-    --bg-elev:  #181818;
-    --bg-deep:  #0a0a0a;
-    --fg:        #ffffff;
-    --fg-dim:    #a0a0a0;
-    --line:     #282828;
-    --field-bg: #222222;
-    --field-bd: #3a3a3a;
-    --accent:   #1db954;
-    --error:    #ff6b6b;
-    --shadow:   rgba(0, 0, 0, 0.4);
+    /* Tema por defecto "Rojo carmesí": negros con tinte cálido y acento
+       carmesí. Los valores se sobrescriben en runtime por el preset
+       elegido en Ajustes y por los color-pickers personalizados. */
+    --bg:        #0d0809;
+    --bg-elev:   #1a1012;
+    --bg-deep:   #050203;
+    --fg:        #f4eaec;
+    --fg-dim:    #9c7a80;
+    --line:      #2d1a1f;
+    --field-bg:  #1f1316;
+    --field-bd:  #3d2228;
+    --accent:    #dc2626;
+    --error:     #f87171;
+    --shadow:    rgba(0, 0, 0, 0.55);
 }
 [data-theme="light"] {
     --bg:        #fafafa;
@@ -33,11 +36,18 @@ html, body { margin: 0; padding: 0; height: 100%; }
 body {
     background: var(--bg);
     color: var(--fg);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    /* La familia de fuentes se controla desde Ajustes → Accesibilidad (CSS
+       var --app-font-family). Si no hay valor guardado se cae al stack que
+       teníamos hardcodeado antes. */
+    font-family: var(--app-font-family, 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif);
     font-size: 14px;
     overflow: hidden;
     transition: background-color 0.3s ease, color 0.3s ease;
 }
+
+/* El "tamaño de texto" de Accesibilidad se aplica vía webFrame.setZoomFactor()
+   de Electron (window.api.setZoomFactor) — equivale al Ctrl+/− de Chrome y
+   no deja huecos de layout. La CSS var --text-scale ya no se usa. */
 
 .hidden { display: none !important; }
 .muted  { color: var(--fg-dim); }
@@ -52,10 +62,14 @@ body {
 .screen { width: 100%; height: 100vh; }
 
 /* --- Login / folder card ------------------------------------------------ */
-#login-screen, #folder-screen {
+/* flex-direction column + gap permite apilar la card y la línea "¿No tienes
+   cuenta?" como dos elementos hermanos centrados con separación clara. */
+#login-screen, #folder-screen, #register-screen, #photo-screen {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 20px;
 }
 .login-card {
     background: var(--bg-elev);
@@ -69,7 +83,9 @@ body {
 .login-card p { margin: 0 0 16px; }
 .login-card form { display: flex; flex-direction: column; gap: 4px; }
 .login-card label { margin-top: 8px; }
+/* Cualquier input de texto/correo/contraseña dentro del card se ve igual. */
 .login-card input[type=text],
+.login-card input[type=email],
 .login-card input[type=password] {
     background: var(--field-bg);
     color: var(--fg);
@@ -78,10 +94,27 @@ body {
     padding: 8px 10px;
     font-size: 13px;
     outline: none;
+    /* Anula el "tinte amarillo" de autofill que pinta Chromium en tema oscuro. */
+    -webkit-text-fill-color: var(--fg);
+    caret-color: var(--fg);
 }
 .login-card input:focus { border-color: var(--accent); }
-.login-card button {
-    margin-top: 14px;
+/* Mata el fondo blanco/amarillo que Chromium superpone al autofill — usamos
+   una sombra interna grande del color del campo para taparlo y forzar el
+   color del texto. */
+.login-card input:-webkit-autofill,
+.login-card input:-webkit-autofill:hover,
+.login-card input:-webkit-autofill:focus,
+.login-card input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px var(--field-bg) inset !important;
+    -webkit-text-fill-color: var(--fg) !important;
+    caret-color: var(--fg);
+    transition: background-color 9999s ease-out 0s;
+}
+/* Botón principal del card. Excluye toggles y botones secundarios para que
+   no se pinten todos en verde. */
+.login-card button:not(.pass-toggle):not(.login-card-btn-secondary) {
+    margin-top: 4px;
     background: var(--accent);
     color: #000;
     border: none;
@@ -93,11 +126,126 @@ body {
 }
 .login-card button:disabled { opacity: 0.5; cursor: default; }
 
+/* Footer del card (link "¿No tienes cuenta?" / "¿Ya tienes cuenta?") */
+/* Vive FUERA del .login-card — el `gap` del contenedor padre da el aire. */
+.login-foot {
+    margin: 0;
+    text-align: center;
+    color: var(--fg-dim);
+}
+.login-foot a {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+.login-foot a:hover { text-decoration: underline; }
+
+/* --- Password con ojo de mostrar/ocultar ------------------------------- */
+.pass-wrap {
+    position: relative;
+    display: flex;
+}
+.pass-wrap input {
+    flex: 1;
+    padding-right: 38px !important;
+}
+/* Más específico que `.login-card button` para no heredar el botón verde
+   de "Entrar". */
+.login-card .pass-toggle,
+.pass-toggle {
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 36px;
+    background: transparent;
+    border: none;
+    color: var(--fg-dim);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    font-weight: normal;
+    transition: color 0.12s ease;
+}
+.login-card .pass-toggle:hover,
+.pass-toggle:hover { color: var(--fg); background: transparent; }
+.login-card .pass-toggle:focus,
+.pass-toggle:focus { outline: none; color: var(--accent); background: transparent; }
+.pass-toggle svg { display: block; }
+
+/* --- Photo screen ------------------------------------------------------- */
+.photo-pick {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0 4px;
+}
+.photo-preview {
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: var(--bg-deep) center/cover no-repeat;
+    border: 2px dashed var(--field-bd);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg-dim);
+    font-size: 12px;
+}
+.photo-preview.has-image { border-style: solid; border-color: var(--accent); }
+.photo-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+}
+.photo-actions button { flex: 1; margin-top: 0 !important; }
+
 /* --- App layout --------------------------------------------------------- */
+/* Flex-column en lugar de grid para que el área principal (cualquiera de
+   main-grid / artist-view / settings-panel — sólo una visible cada vez)
+   ocupe el espacio sobrante mediante flex:1, sin que el footer se infle
+   cuando alguno de los hermanos del medio está oculto.
+   Importante: usar `flex: 1` (basis 0) en el área central — con basis auto
+   el contenido enorme del grid empuja al resto por debajo de su tamaño
+   natural y el header/footer/toolbar acaban clipados. */
 #app-screen {
-    display: grid;
-    grid-template-rows: auto auto 1fr auto auto;
+    display: flex;
+    flex-direction: column;
     height: 100vh;
+}
+#main-grid,
+#artist-view,
+#settings-panel,
+#profile-view {
+    flex: 1 1 0;
+    min-height: 0;
+}
+/* Items "fijos" del esqueleto: que no se encojan ni se estiren — siempre
+   muestran su altura natural. */
+#app-screen > .app-header,
+#app-screen > .now-playing,
+.app-content > #status-bar,
+.app-content > #album-toolbar {
+    flex: 0 0 auto;
+}
+
+/* Fila central: contenido a la izquierda + panel de cola a la derecha. */
+.app-middle {
+    display: flex;
+    flex-direction: row;
+    flex: 1 1 0;
+    min-height: 0;
+}
+.app-content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
 }
 .app-header {
     display: flex;
@@ -108,29 +256,117 @@ body {
     border-bottom: 1px solid var(--line);
 }
 
-/* --- Top tabs ----------------------------------------------------------- */
+/* --- Top tabs estilo Chrome -------------------------------------------- */
 .top-tabs {
     display: flex;
-    gap: 4px;
+    gap: 2px;
+    flex-shrink: 1;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    align-items: flex-end;
+    max-width: calc(100% - 360px);
+    scrollbar-width: thin;
 }
+.top-tabs::-webkit-scrollbar { height: 4px; }
+
 .tab {
-    background: transparent;
+    background: color-mix(in srgb, var(--accent) 4%, transparent);
     border: none;
     color: var(--fg-dim);
-    padding: 8px 14px;
-    border-radius: 6px;
+    padding: 5px 10px 5px 12px;
+    border-radius: 8px 8px 0 0;
     cursor: pointer;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.2px;
-    transition: background 0.15s ease, color 0.15s ease;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background 0.12s ease, color 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 180px;
+    height: 28px;
+    flex-shrink: 0;
+    user-select: none;
+    position: relative;
 }
 .tab:hover { color: var(--fg); background: var(--field-bg); }
 .tab.active {
     color: var(--fg);
-    background: var(--field-bg);
+    background: color-mix(in srgb, var(--accent) 18%, var(--field-bg));
     box-shadow: inset 0 -2px 0 var(--accent);
 }
+.tab.dragging { opacity: 0.4; }
+.tab.drop-before::before,
+.tab.drop-after::after {
+    content: '';
+    position: absolute;
+    top: 4px; bottom: 4px;
+    width: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+}
+.tab.drop-before::before { left: -2px; }
+.tab.drop-after::after  { right: -2px; }
+
+.tab .tab-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.tab .tab-close {
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 0;
+    padding: 0;
+    opacity: 0;
+    transition: opacity 0.12s ease, background 0.12s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.tab:hover .tab-close,
+.tab.active .tab-close { opacity: 0.7; }
+.tab .tab-close:hover {
+    opacity: 1;
+    background: color-mix(in srgb, currentColor 18%, transparent);
+}
+
+.tab.tab-icon {
+    width: 32px;
+    padding: 0;
+    justify-content: center;
+}
+.tab.tab-icon .tab-close {
+    position: absolute;
+    top: 2px; right: 2px;
+    width: 12px; height: 12px;
+    font-size: 10px;
+}
+
+.tab-add {
+    background: transparent;
+    border: none;
+    color: var(--fg-dim);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 4px;
+    flex-shrink: 0;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+.tab-add:hover { color: var(--fg); background: var(--field-bg); }
 
 .header-tools {
     margin-left: auto;
@@ -174,13 +410,23 @@ body {
     border-bottom: 1px solid var(--line);
     min-height: 22px;
 }
+/* Sin texto → sin espacio: colapsa la barra entera para que no quede una
+   franja muerta entre las pestañas y el contenido. */
+.status-bar:empty {
+    padding: 0;
+    min-height: 0;
+    border-bottom: 0;
+}
 
 /* --- Album / artist / genre / playlist grid ----------------------------- */
+/* Tamaño mínimo configurable desde Ajustes: la variable la setea JS sobre
+   :root cuando el usuario elige Pequeño / Mediano / Grande. */
+:root { --album-card-min: 180px; }
 .album-grid {
     overflow-y: auto;
     padding: 20px;
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(var(--album-card-min), 1fr));
     gap: 18px;
     align-content: start;
 }
@@ -241,8 +487,8 @@ body {
 .drawer {
     grid-column: 1 / -1;
     display: grid;
-    grid-template-columns: 240px minmax(220px, 320px) 1fr;
-    gap: 32px;
+    grid-template-columns: 220px minmax(160px, 200px) 1fr;
+    gap: 20px;
     padding: 26px 30px;
     border-radius: 14px;
     margin: 8px 0;
@@ -263,8 +509,8 @@ body {
 }
 
 .drawer-cover {
-    width: 240px;
-    height: 240px;
+    width: 220px;
+    height: 220px;
     background-size: cover;
     background-position: center;
     background-color: rgba(0, 0, 0, 0.18);
@@ -277,6 +523,40 @@ body {
     font-size: 3rem;
     font-weight: 700;
     color: rgba(255, 255, 255, 0.65);
+}
+.drawer-cover.clickable { cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.drawer-cover.clickable:hover {
+    transform: scale(1.015);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+}
+
+/* Collage de portadas: cuadrícula SIEMPRE cuadrada dentro de .album-cover o
+   .drawer-cover. La variable --collage-n la pone el HTML (1, 2 o 3) y
+   determina el lado del cuadrado. Filas y columnas siempre iguales para que
+   no se cuelen rectángulos tipo 2x1. */
+.cover-collage {
+    position: absolute; inset: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--collage-n, 3), 1fr);
+    grid-template-rows:    repeat(var(--collage-n, 3), 1fr);
+    gap: 1px;
+    overflow: hidden;
+    border-radius: inherit;
+}
+.cover-collage > span {
+    background-size: cover;
+    background-position: center;
+    background-color: var(--bg-elev);
+}
+/* Celda sin portada: mismo tono que el resto para que el hueco no chille. */
+.cover-collage > span.cover-cell-empty {
+    background-color: color-mix(in srgb, var(--bg-elev) 80%, var(--bg) 20%);
+}
+.album-cover { position: relative; overflow: hidden; }
+.drawer-cover { position: relative; overflow: hidden; }
+.genre-cover-actions {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-left: auto;
 }
 .drawer-info {
     display: flex;
@@ -346,16 +626,16 @@ body {
 
 .drawer-tracks {
     align-self: stretch;
-    column-count: 2;
+    /* Columnas adaptativas: cabe una segunda columna sólo si cada una tiene
+       al menos 280 px. Por debajo, las pistas pasan a una sola columna y
+       el título recupera todo el ancho. */
+    columns: 280px auto;
     column-gap: 28px;
     column-fill: balance;
 }
-@media (max-width: 980px) {
-    .drawer-tracks { column-count: 1; }
-}
 .drawer-track {
     display: grid;
-    grid-template-columns: 30px 1fr auto auto;
+    grid-template-columns: 28px minmax(0, 1fr) auto auto auto auto;
     gap: 12px;
     align-items: center;
     padding: 5px 8px;
@@ -399,6 +679,31 @@ body {
 }
 .drawer-track:hover .row-btn { opacity: 0.7; }
 .drawer-track .row-btn:hover { opacity: 1; background: color-mix(in srgb, currentColor 18%, transparent); }
+
+/* Botón corazón por fila. Outline cuando no está liked (sólo visible en
+   hover de la fila), relleno en color acento cuando sí (visible siempre,
+   como hace Spotify). */
+.drawer-track .row-like {
+    background: transparent;
+    border: none;
+    color: inherit;
+    opacity: 0;
+    padding: 2px 6px;
+    width: 26px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: opacity 0.12s ease, color 0.12s ease, background 0.12s ease, transform 0.1s ease;
+}
+.drawer-track .row-like svg { width: 14px; height: 14px; }
+.drawer-track:hover .row-like { opacity: 0.7; }
+.drawer-track .row-like:hover { opacity: 1; background: color-mix(in srgb, currentColor 18%, transparent); }
+/* Si la canción ya está liked sólo cambia el COLOR (acento) — la
+   visibilidad sigue siendo solo en hover, como el botón "+". */
+.drawer-track .row-like[aria-pressed="true"] {
+    color: var(--accent);
+}
+.drawer-track .row-like:active { transform: scale(0.85); }
 .drawer-close {
     position: absolute;
     top: 10px;
@@ -508,27 +813,2123 @@ body {
 /* --- Now playing footer ------------------------------------------------- */
 .now-playing {
     display: grid;
-    grid-template-columns: 56px 1fr auto;
-    gap: 12px;
+    grid-template-columns: minmax(180px, 1fr) minmax(340px, 1.8fr) minmax(140px, 1fr);
+    gap: 18px;
     align-items: center;
     padding: 10px 16px;
     background: var(--bg-elev);
     border-top: 1px solid var(--line);
 }
+.now-playing { padding: 6px 16px; min-height: 56px; }
+.np-left {
+    display: flex; align-items: center; gap: 10px; min-width: 0;
+}
 .np-cover {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-deep) center/cover no-repeat;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+.np-info { min-width: 0; flex: 1; }
+.np-title { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.np-meta  { font-size: 11px; }
+
+/* Botón "Me Gusta" en el now-playing. Outline cuando no está liked; relleno
+   en color de acento cuando sí. Pequeño rebote al pulsar para feedback. */
+.np-like-btn {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--fg-dim);
+    cursor: pointer;
+    border-radius: 50%;
+    transition: color 0.12s ease, transform 0.1s ease, background 0.12s ease;
+    flex-shrink: 0;
+}
+.np-like-btn:hover { color: var(--fg); background: color-mix(in srgb, var(--fg) 8%, transparent); }
+.np-like-btn:disabled { opacity: 0.4; cursor: default; }
+.np-like-btn[aria-pressed="true"] { color: var(--accent); }
+.np-like-btn[aria-pressed="true"]:hover { color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.np-like-btn:active:not(:disabled) { transform: scale(0.88); }
+.np-like-btn svg { width: 18px; height: 18px; }
+
+/* Botón "abrir modal" en la cabecera del widget liked-songs. */
+.pv-widget-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pv-widget-open {
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--fg) 15%, transparent);
+    color: var(--fg-dim);
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, transform 0.1s ease;
+}
+.pv-widget-open:hover { color: var(--fg); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.pv-widget-open:active { transform: scale(0.9); }
+
+/* "Ver las N" — botón al pie del widget de Me Gusta. */
+.pv-widget-more {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+.pv-widget-more:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+/* Modal de Me Gusta — overlay fijo a pantalla completa, contenido centrado. */
+.liked-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: liked-modal-fade 0.15s ease;
+}
+@keyframes liked-modal-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+.liked-modal-content {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    width: min(640px, 92vw);
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    overflow: hidden;
+}
+.liked-modal-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--line);
+}
+.liked-modal-title { margin: 0; font-size: 15px; font-weight: 700; }
+.liked-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--fg-dim);
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+.liked-modal-close:hover { background: color-mix(in srgb, var(--fg) 10%, transparent); color: var(--fg); }
+.liked-modal-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 14px 16px;
+}
+.liked-modal-body ul.pv-track-list { margin: 0; padding: 0; list-style: none; }
+
+/* Tarjeta virtual "Tus Me Gusta" en la pestaña Listas: portada en gradiente
+   del color de acento con un corazón centrado, en lugar de la portada real
+   de una playlist. */
+.album-card.liked-card .album-cover.liked-cover {
+    background: linear-gradient(135deg,
+        color-mix(in srgb, var(--accent) 90%, transparent) 0%,
+        color-mix(in srgb, var(--accent) 35%, var(--bg-elev) 65%) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+.album-card.liked-card .album-cover.liked-cover svg {
+    width: 42%;
+    height: 42%;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
+}
+
+.np-center {
+    display: flex; flex-direction: column; align-items: stretch; gap: 2px; min-width: 0;
+}
+.np-controls { display: flex; gap: 2px; justify-content: center; align-items: center; }
+
+/* Botones redondos del reproductor: discretos en reposo, anillo suave al
+   pasar por encima, leve "press" al pulsar. Todos comparten radio 50%. */
+.np-btn {
+    background: color-mix(in srgb, var(--fg) 6%, transparent);
+    border: none;
+    color: var(--fg);
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    transition: background 0.15s ease, transform 0.12s ease,
+                box-shadow 0.15s ease, opacity 0.12s ease;
+    padding: 0;
+    opacity: 0.9;
+    flex-shrink: 0;
+    margin: 0 2px;
+}
+.np-btn:hover {
+    opacity: 1;
+    background: color-mix(in srgb, var(--fg) 14%, transparent);
+    box-shadow: 0 2px 8px var(--shadow);
+}
+.np-btn:active { transform: scale(0.92); }
+.np-btn.muted { opacity: 0.55; color: var(--fg-dim); }
+.np-btn.active { color: var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.np-btn.active:hover { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.np-btn svg { display: block; }
+
+/* Botón principal (play/pause): cápsula grande con acento. Sin halo. */
+.np-btn-main {
+    background: var(--accent);
+    color: #000;
+    width: 46px;
+    height: 46px;
+    opacity: 1;
+    margin: 0 6px;
+    box-shadow: none;
+}
+.np-btn-main:hover {
+    background: var(--accent);
+    filter: brightness(1.08);
+    transform: scale(1.06);
+    box-shadow: none;
+}
+.np-btn-main:active { transform: scale(0.96); }
+
+/* Botones de salto +/- 10s: SVG arriba, número centrado dentro del círculo. */
+.np-skip { line-height: 1; }
+.np-skip svg { width: 20px; height: 20px; }
+.np-skip .np-btn-num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    pointer-events: none;
+    padding-top: 1px;
+}
+
+/* Botón "small" (mute): un punto más compacto que el resto. */
+.np-btn-small { width: 34px; height: 34px; }
+.np-btn-small svg { width: 18px; height: 18px; }
+
+.np-progress {
+    display: grid; grid-template-columns: 32px 1fr 32px; gap: 8px; align-items: center;
+}
+.np-time { font-family: 'Consolas', monospace; font-size: 11px; color: var(--fg-dim); text-align: center; }
+
+.np-right { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
+
+/* --- Star rating widget ----------------------------------------------- */
+.stars {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    line-height: 0;
+    color: var(--fg);
+    user-select: none;
+}
+.stars.editable .star { cursor: pointer; }
+.stars .star {
+    position: relative;
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+}
+.stars .star-bg,
+.stars .star-fg {
+    position: absolute;
+    inset: 0;
+    height: 100%;
+    pointer-events: none;
+}
+.stars .star-bg { color: color-mix(in srgb, currentColor 30%, transparent); width: 100%; }
+/* Estrella seleccionada: misma familia que la "vacía" pero a opacidad plena,
+   así sale más clara (más blanca en oscuro, más negra en claro) sin ser amarilla. */
+.stars .star-fg {
+    color: currentColor;
+    width: var(--fill, 0%);
+    overflow: hidden;
+    transition: width 0.08s ease;
+}
+.stars .star-bg svg,
+.stars .star-fg svg { width: 18px; height: 18px; display: block; }
+.stars.editable .star:hover { transform: scale(1.08); }
+.stars .star { transition: transform 0.1s ease; }
+/* Variante compacta (footer) */
+.stars.compact .star,
+.stars.compact .star-bg svg,
+.stars.compact .star-fg svg { width: 16px; height: 16px; }
+/* Variante tiny (filas de track) — estrellas pequeñas, invisibles salvo en
+   hover de la fila o si la canción ya está valorada (estado pintado). */
+.stars.tiny .star,
+.stars.tiny .star-bg svg,
+.stars.tiny .star-fg svg { width: 11px; height: 11px; }
+.stars.tiny { gap: 1px; }
+.drawer-track .row-rating {
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    color: inherit;
+}
+.drawer-track:hover .row-rating { opacity: 0.65; }
+.drawer-track .row-rating:hover { opacity: 1; }
+/* Si alguna estrella ya está rellena (rating > 0) mantenemos visible. */
+.drawer-track .row-rating:has(.star-fg[style*="100%"]),
+.drawer-track .row-rating:has(.star-fg[style*="50%"]) { opacity: 1; }
+/* Variante grande (drawer) */
+.stars.large .star,
+.stars.large .star-bg svg,
+.stars.large .star-fg svg { width: 22px; height: 22px; }
+
+/* Footer: contenedor de estrellas a la izquierda del volumen */
+.np-rating {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 6px;
+    border-right: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+    margin-right: 4px;
+    height: 28px;
+}
+
+/* Drawer: fila propia con label discreto */
+.drawer-rating {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 2px;
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+.drawer-rating-label {
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    opacity: 0.75;
+}
+.drawer-rating .stars { color: var(--drawer-fg, var(--fg)); }
+.drawer-rating-clear {
+    background: transparent;
+    border: 1px solid currentColor;
+    color: inherit;
+    border-radius: 999px;
+    padding: 2px 9px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    opacity: 0.55;
+    transition: opacity 0.12s ease, background 0.12s ease;
+}
+.drawer-rating-clear:hover { opacity: 1; background: color-mix(in srgb, currentColor 12%, transparent); }
+.drawer-rating-clear.hidden { display: none !important; }
+
+/* --- Album sort toolbar ----------------------------------------------- */
+.album-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px 6px;
+    color: var(--fg);
+    overflow: hidden;
+    transition: padding 0.18s ease, max-height 0.18s ease;
+    max-height: 80px;
+}
+/* Colapsa sin sacarlo del flujo, así el área central (main-grid) no se mueve. */
+.album-toolbar.album-toolbar--off {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    pointer-events: none;
+}
+.album-toolbar-label {
+    font-size: 12px;
+    color: var(--fg-dim);
+    letter-spacing: 0.3px;
+}
+/* Botón disparador del dropdown propio (forma de pill, mismo aire que un
+   <select> sin las limitaciones de estilado de su menú nativo). */
+.album-sort-btn {
+    background: var(--field-bg);
+    color: var(--fg);
+    border: 1px solid var(--field-bd);
+    border-radius: 999px;
+    padding: 7px 14px 7px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.9px;
+    cursor: pointer;
+    outline: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+.album-sort-btn:hover { border-color: var(--accent); }
+.album-sort-btn[aria-expanded="true"] { border-color: var(--accent); }
+.album-sort-chev {
+    color: var(--fg-dim);
+    transition: transform 0.18s ease;
+}
+.album-sort-btn[aria-expanded="true"] .album-sort-chev { transform: rotate(180deg); }
+
+/* Menú del dropdown — usa la base .popover (position: fixed). Compacto
+   pero con suficiente aire entre items para no apelotonarse. */
+.album-sort-menu {
+    padding: 4px;
+    min-width: 220px;
+    max-height: 320px;
+}
+.album-sort-item {
+    background: transparent;
+    border: none;
+    color: inherit;
+    width: 100%;
+    text-align: left;
+    padding: 7px 12px;
+    margin: 1px 0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    line-height: 1.3;
+    display: block;
+}
+.album-sort-item:hover { background: var(--field-bg); }
+.album-sort-item.selected {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+    font-weight: 700;
+}
+.album-toolbar-label {
+    letter-spacing: 0.4px;
+}
+
+.np-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 3px;
+    border-radius: 2px;
+    background: color-mix(in srgb, var(--fg) 18%, transparent);
+    outline: none;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+}
+.np-slider-seek {
+    background: linear-gradient(
+        to right,
+        var(--accent) 0%,
+        var(--accent) var(--p, 0%),
+        color-mix(in srgb, var(--fg) 18%, transparent) var(--p, 0%),
+        color-mix(in srgb, var(--fg) 18%, transparent) 100%
+    );
+}
+.np-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    transition: transform 0.12s ease;
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
+}
+.np-slider::-webkit-slider-thumb:hover { transform: scale(1.25); }
+.np-slider-vol { width: 70px; }
+
+#audio { display: none; }
+
+/* --- Tab Settings + panel --------------------------------------------- */
+.top-tabs .tab.tab-icon {
+    width: 36px; height: 36px; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+}
+.settings-panel {
+    overflow-y: auto;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px 20px 40px;
+    color: var(--fg);
+}
+.settings-panel h2 { margin: 0 0 24px; font-size: 22px; font-weight: 800; }
+.settings-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 24px; padding: 16px 4px; border-bottom: 1px solid var(--line);
+}
+.settings-name { font-weight: 700; font-size: 14px; }
+.settings-desc { font-size: 12px; color: var(--fg-dim); margin-top: 4px; }
+.settings-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: transparent; border: 1px solid var(--field-bd); color: var(--fg);
+    padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    font-weight: 600; font-size: 12px;
+}
+.settings-btn:hover { background: var(--field-bg); }
+.settings-tema-track {
+    width: 32px; height: 18px; border-radius: 999px;
+    background: var(--field-bd); position: relative; display: inline-block;
+    transition: background 0.2s ease;
+}
+.settings-tema-thumb {
+    position: absolute; top: 2px; left: 2px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--fg); transition: transform 0.2s ease;
+}
+.settings-btn[aria-pressed="true"] .settings-tema-track { background: var(--accent); }
+.settings-btn[aria-pressed="true"] .settings-tema-thumb { transform: translateX(14px); background: #000; }
+
+/* --- Sección Last.fm en Ajustes -------------------------------------- */
+.settings-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--line); }
+.settings-section-title { margin: 0 0 6px; font-size: 16px; font-weight: 800; }
+.settings-section-desc { font-size: 12px; color: var(--fg-dim); margin: 0 0 12px; line-height: 1.45; }
+.settings-link { color: var(--accent); text-decoration: underline; cursor: pointer; }
+.settings-row-stack { flex-direction: column; align-items: stretch; gap: 12px; }
+.settings-row-stack .settings-label { align-self: flex-start; }
+.settings-lastfm-creds {
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+}
+.settings-input {
+    flex: 1 1 200px; min-width: 0;
+    background: var(--field-bg); color: var(--fg);
+    border: 1px solid var(--field-bd); border-radius: 6px;
+    padding: 8px 10px; font-size: 12px; font-family: inherit;
+}
+.settings-input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.settings-lastfm-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.settings-lastfm-error {
+    width: 100%;
+    padding: 6px 10px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--error) 18%, transparent);
+    border: 1px solid color-mix(in srgb, var(--error) 55%, transparent);
+    color: var(--error);
+    font-size: 12px;
+    font-weight: 500;
+}
+.settings-btn-action {
+    background: var(--accent); color: #000; border: none;
+    padding: 8px 14px; border-radius: 999px;
+    cursor: pointer; font-weight: 700; font-size: 12px;
+}
+.settings-btn-action:hover { filter: brightness(1.08); }
+.settings-btn-action:disabled { opacity: 0.45; cursor: not-allowed; }
+.settings-btn-action.ghost {
+    background: transparent; color: var(--fg); border: 1px solid var(--field-bd);
+}
+.settings-btn-action.ghost:hover { background: var(--field-bg); }
+
+/* Selector tamaño de álbumes (presets + slider) */
+.settings-album-size {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+.settings-size-btn {
+    background: transparent;
+    border: 1px solid var(--field-bd);
+    border-radius: 999px;
+    color: var(--fg-dim);
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.settings-size-btn:hover { background: var(--field-bg); color: var(--fg); }
+.settings-size-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+}
+.album-size-slider-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 4px;
+}
+.album-size-slider-row input[type="range"] {
+    flex: 1;
+    min-width: 160px;
+    accent-color: var(--accent);
+}
+.album-size-value {
+    font-family: 'Consolas', monospace;
+    font-size: 12px;
+    color: var(--fg-dim);
+    min-width: 56px;
+    text-align: right;
+}
+
+/* --- Apariencia: presets + color pickers ------------------------------ */
+.theme-presets-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+}
+.theme-preset-btn {
+    background: transparent;
+    border: 1px solid var(--field-bd);
+    border-radius: 8px;
+    color: var(--fg);
+    padding: 10px 12px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 600;
+    transition: border-color 0.12s ease, transform 0.12s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.theme-preset-btn:hover { transform: translateY(-1px); border-color: var(--fg-dim); }
+.theme-preset-btn.active { border-color: var(--accent); }
+.theme-preset-swatches {
+    display: flex;
+    gap: 3px;
+    height: 12px;
+}
+.theme-preset-swatches span {
+    flex: 1;
+    border-radius: 2px;
+}
+.color-pickers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px 16px;
+}
+.color-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--fg-dim);
+}
+.color-picker label { flex: 1; }
+.color-picker input[type="color"] {
+    width: 32px;
+    height: 28px;
+    border: 1px solid var(--field-bd);
+    border-radius: 6px;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+}
+.color-picker input[type="color"]::-webkit-color-swatch { border: none; border-radius: 4px; }
+.color-picker input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
+
+/* --- Botón perfil (foto del usuario) -------------------------------- */
+.boton-perfil {
+    background: transparent;
+    border: 1px solid var(--field-bd);
+    color: var(--fg);
+    width: 32px; height: 32px;
+    border-radius: 50%; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    background-size: cover; background-position: center;
+    padding: 0;
+    overflow: hidden;
+    transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+.boton-perfil:hover { background-color: var(--field-bg); border-color: var(--accent); transform: scale(1.05); }
+/* Con foto: no se ve el SVG fallback. */
+.boton-perfil.has-photo { border-color: var(--accent); }
+.boton-perfil.has-photo svg { display: none; }
+
+.perfil-menu {
+    position: absolute; top: calc(100% + 8px); right: 0;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: 0 12px 32px var(--shadow);
+    padding: 14px;
+    min-width: 240px;
+    z-index: 200;
+    display: flex; flex-direction: column; gap: 12px;
+}
+.perfil-cabecera { display: flex; align-items: center; gap: 12px; }
+.perfil-foto {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--bg-deep); background-size: cover; background-position: center;
+    flex-shrink: 0; border: 1px solid var(--field-bd);
+}
+.perfil-nombre { font-weight: 700; font-size: 14px; }
+
+/* Stats compactas dentro del menú de perfil */
+.perfil-stats {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 10px 0;
+}
+.perfil-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 12px;
+    gap: 12px;
+}
+.perfil-stat-label {
+    color: var(--fg-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 10px;
+    font-weight: 700;
+}
+.perfil-stat-val { font-weight: 600; font-size: 13px; }
+
+/* Pequeñas etiquetas junto al email del perfil */
+.badge-ok,
+.badge-unverified {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    vertical-align: middle;
+}
+.badge-ok {
+    background: color-mix(in srgb, var(--accent) 25%, transparent);
+    color: var(--accent);
+}
+.badge-unverified {
+    background: color-mix(in srgb, var(--error) 18%, transparent);
+    color: var(--error);
+}
+.perfil-top-artists { font-size: 12px; }
+.perfil-top-list {
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.perfil-top-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    border-bottom: 1px dashed color-mix(in srgb, var(--fg) 8%, transparent);
+}
+.perfil-top-list li:last-child { border-bottom: none; }
+.perfil-top-list li .ta-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+.perfil-top-list li .ta-time {
+    color: var(--fg-dim);
+    font-variant-numeric: tabular-nums;
+}
+.login-card-btn-secondary {
+    background: transparent;
+    border: 1px solid var(--error);
+    color: var(--error);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 13px;
+}
+.login-card-btn-secondary:hover { background: color-mix(in srgb, var(--error) 12%, transparent); }
+
+/* --- Artist drawer + meta-artist clicable ----------------------------- */
+.drawer.drawer-artist {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    background: var(--bg-elev);
+    color: var(--fg);
+}
+.drawer-artist-header {
+    padding-right: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+.drawer-artist-header .drawer-title { font-size: 1.6rem; }
+.drawer-artist-play {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.drawer-artist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 14px;
+}
+.meta-artist {
+    cursor: pointer; text-decoration: none;
+    border-bottom: 1px dotted transparent;
+    transition: color 0.12s ease, border-color 0.12s ease;
+}
+.meta-artist:hover { color: var(--accent); border-bottom-color: currentColor; }
+
+/* --- Tag pills (MusicBrainz tags) ------------------------------------- */
+.tag-pill {
+    display: inline-block;
+    padding: 4px 10px;
+    margin: 0 6px 6px 0;
+    border-radius: 999px;
+    background: var(--field-bg);
+    border: 1px solid var(--field-bd);
+    color: var(--fg);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: lowercase;
+    letter-spacing: 0.3px;
+    cursor: default;
+    user-select: none;
+}
+.tag-pill-sm {
+    padding: 2px 8px;
+    font-size: 10px;
+    margin: 0 4px 4px 0;
+}
+
+/* Strip de tags en el artist view y album view */
+.av-tags, .alv-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 12px 0 4px;
+}
+
+/* Top-3 tags en la cabecera del drawer de álbum */
+.drawer-top-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+}
+
+/* --- Vista detallada de álbum (full screen) -------------------------- */
+.album-view { overflow-y: auto; padding: 0; color: var(--fg); background: var(--bg); }
+.alv-hero {
+    position: relative;
+    min-height: 260px;
+    padding: 32px 28px 24px;
+}
+.alv-hero-bg {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+    filter: blur(36px) brightness(0.55) saturate(1.2);
+    transform: scale(1.1);
+    z-index: 0;
+}
+.alv-hero-fade {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, transparent 60%, var(--bg));
+    z-index: 1;
+}
+.alv-hero-content {
+    position: relative; z-index: 2;
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 28px;
+    align-items: end;
+}
+.alv-cover {
+    width: 200px; height: 200px;
+    background-size: cover; background-position: center;
+    background-color: var(--field-bg);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+}
+.alv-headline { color: var(--fg); }
+.alv-eyebrow { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
+.alv-title { margin: 6px 0 8px; font-size: 32px; font-weight: 800; line-height: 1.1; }
+.alv-by { font-size: 14px; margin-bottom: 4px; }
+.alv-meta-line { font-size: 12px; opacity: 0.75; }
+.alv-actions { margin-top: 16px; }
+.alv-body { max-width: 960px; margin: 0 auto; padding: 24px 28px 60px; }
+.alv-description {
+    margin: 12px 0 20px; line-height: 1.55;
+    color: var(--fg-dim);
+    font-size: 13px;
+}
+.alv-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px 24px;
+    padding: 14px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    margin-bottom: 20px;
+}
+.alv-fact { display: flex; flex-direction: column; gap: 2px; }
+.alv-fact-k { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; opacity: 0.6; }
+.alv-fact-v { font-size: 13px; font-weight: 600; }
+.alv-fact-v a { color: var(--accent); cursor: pointer; text-decoration: underline; }
+.alv-section-title { margin: 24px 0 12px; font-size: 16px; font-weight: 800; }
+.alv-tracks { display: flex; flex-direction: column; gap: 2px; }
+
+/* --- Genres tab toolbar + grid -------------------------------------- */
+.genres-toolbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--line);
+}
+.genres-filter-label { font-size: 12px; color: var(--fg-dim); }
+.genres-filter-select {
+    background: var(--field-bg);
+    color: var(--fg);
+    border: 1px solid var(--field-bd);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
+.genres-toolbar-hint { font-size: 11px; color: var(--fg-dim); margin-left: auto; }
+.genres-grid {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 14px;
+}
+.genre-card .genre-cover {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--field-bg) 100%);
+}
+
+/* --- Vista de artista único (tab "artist:<name>") -------------------- */
+.artist-view {
+    overflow-y: auto;
+    padding: 0;
+    color: var(--fg);
+    background: var(--bg);
+}
+.av-hero {
+    position: relative;
+    min-height: 280px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    background: var(--bg-deep);
+}
+.av-hero-bg {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    filter: blur(12px) saturate(1.1);
+    transform: scale(1.1);
+    opacity: 0.55;
+}
+.av-hero-fade {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom,
+        rgba(0,0,0,0.05) 0%,
+        rgba(0,0,0,0.45) 80%,
+        var(--bg) 100%);
+}
+[data-theme="light"] .av-hero-fade {
+    background: linear-gradient(to bottom,
+        rgba(255,255,255,0.05) 0%,
+        rgba(255,255,255,0.55) 80%,
+        var(--bg) 100%);
+}
+.av-hero-content {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 36px 36px 28px;
+}
+.av-photo {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: var(--bg-elev) center/cover no-repeat;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+    border: 3px solid color-mix(in srgb, var(--fg) 8%, transparent);
+    position: relative;
+    overflow: hidden;
+}
+/* Fallback de iniciales cuando no hay foto: el JS pone .av-photo-empty
+   y un atributo data-initials con las letras a pintar. */
+.av-photo.av-photo-empty::before {
+    content: attr(data-initials);
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 56px; font-weight: 800; letter-spacing: -2px;
+    color: var(--fg);
+    background: linear-gradient(135deg,
+                color-mix(in srgb, var(--accent) 80%, transparent) 0%,
+                color-mix(in srgb, var(--bg-elev) 90%, transparent) 100%);
+}
+.av-eyebrow {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--fg-dim);
+    font-weight: 700;
+}
+.av-name {
+    margin: 4px 0 6px;
+    font-size: 44px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    line-height: 1;
+}
+.av-source { font-size: 12px; color: var(--fg-dim); }
+
+.av-body {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 36px 60px;
+}
+.av-extract {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--fg);
+    opacity: 0.9;
+    margin: 0 0 18px;
+    white-space: pre-wrap;
+}
+.av-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+}
+.av-link {
+    color: var(--accent);
+    text-decoration: none;
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background 0.12s ease;
+}
+.av-link:hover { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+.av-section-title {
+    margin: 0 0 16px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--fg-dim);
+}
+.av-albums {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 16px;
+}
+@media (max-width: 720px) {
+    .av-hero-content { flex-direction: column; align-items: flex-start; padding: 24px; }
+    .av-photo { width: 120px; height: 120px; }
+    .av-name { font-size: 28px; }
+    .av-body { padding: 0 24px 40px; }
+}
+
+/* --- Vista de perfil del usuario ------------------------------------- */
+.profile-view {
+    overflow-y: auto;
+    color: var(--fg);
+    background: var(--bg);
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    position: relative;
+}
+/* Wrapper interno del perfil. Engloba todo el contenido y crece a la altura
+   del scroll, no del viewport. Es donde se ancla el velo para que abarque
+   también las zonas de abajo cuando haces scroll. */
+.pv-inner {
+    position: relative;
+    min-height: 100%;
+}
+/* Velo configurable encima del fondo. Independiente del ancho de las
+   ventanas: su anchura va como % del viewport. Color y opacidad del relleno
+   se combinan en una rgba (--veil-fill); lo mismo para el borde, así
+   ambas opacidades son independientes entre sí. */
+.profile-view.has-bg .pv-inner::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    /* Mismo patrón que las ventanas: ancho fijo en px capado al 100% del
+       viewport, así al estrechar la app el velo no "salta" relativo a los
+       widgets — los dos se topan con el borde a la vez. */
+    width: min(var(--veil-width, 100%), 100%);
+    background-color: var(--veil-fill, rgba(0,0,0,0.65));
+    border-left:  var(--veil-border-width, 0) solid var(--veil-border-color, transparent);
+    border-right: var(--veil-border-width, 0) solid var(--veil-border-color, transparent);
+    box-sizing: border-box;
+    pointer-events: none;
+    z-index: 0;
+}
+.pv-inner > * { position: relative; z-index: 1; }
+.profile-view.has-bg .pv-hero { background: transparent; border-bottom: none; }
+/* Hero. Layout depende del data-photo-position del propio hero. Por defecto
+   columna centrada (foto encima del nombre). Comparte el ancho máximo con
+   los widgets para que ambos queden centrados al mismo bloque. */
+.pv-hero {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 48px 36px 28px;
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--accent) 14%, var(--bg)) 0%,
+        var(--bg) 100%);
+    border-bottom: 1px solid var(--line);
+    font-family: var(--profile-font, inherit);
+    max-width: min(var(--window-max-width, 100%), 100%);
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
+}
+.pv-hero[data-photo-position="top"]    { flex-direction: column; text-align: center; }
+.pv-hero[data-photo-position="bottom"] { flex-direction: column-reverse; text-align: center; }
+.pv-hero[data-photo-position="left"]   { flex-direction: row;          text-align: left;   justify-content: flex-start; }
+.pv-hero[data-photo-position="right"]  { flex-direction: row-reverse;  text-align: left;   justify-content: flex-start; }
+/* Header con marco propio (look "ventana") */
+.pv-hero.pv-hero-framed {
+    background: var(--window-bg, var(--bg-elev));
+    border: var(--window-border-width, 1px) solid var(--window-border-color, var(--line));
+    border-radius: var(--window-radius, 14px);
+    margin: 24px auto 0;
+    padding: 28px 28px;
+}
+.profile-view.has-bg .pv-hero.pv-hero-framed { background: var(--window-bg, var(--bg-elev)); }
+/* Eyebrow + "cuenta creada el …" usan su propio color (--subtitle-color),
+   independiente del nombre. La regla con `currentColor` evita que el
+   <strong> heredase nada raro. */
+.pv-hero .pv-eyebrow,
+.pv-hero .pv-eyebrow strong,
+.pv-hero .pv-created { color: var(--subtitle-color, var(--fg-dim)); }
+.pv-hero .pv-eyebrow strong { color: currentColor; }
+
+.pv-photo {
+    width: 140px;
+    height: 140px;
+    background: var(--bg-elev) center/cover no-repeat;
+    border: 3px solid color-mix(in srgb, var(--fg) 12%, transparent);
+    box-shadow: 0 8px 26px rgba(0,0,0,0.45);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg-dim);
+    font-size: 48px;
+    font-weight: 800;
+    transition: border-radius 0.15s ease;
+    position: relative;
+}
+/* Marco PNG superpuesto a la foto. Con object-fit:contain ocupa la caja sin
+   distorsión; vars permiten centrar (offset X/Y) y escalar (1 = mismo tamaño
+   que la foto, 1.4 = sobresale para hacer de "marco" alrededor). */
+.pv-photo .pv-photo-frame {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    transform: translate(var(--frame-x, 0%), var(--frame-y, 0%))
+               scale(var(--frame-scale, 1));
+    transform-origin: center center;
+}
+/* Formas de la foto. */
+.pv-hero[data-photo-shape="circle"]  .pv-photo { border-radius: 50%; }
+.pv-hero[data-photo-shape="square"]  .pv-photo { border-radius: 0; }
+.pv-hero[data-photo-shape="rounded"] .pv-photo { border-radius: 18px; }
+.pv-hero[data-photo-shape="oval"]    .pv-photo {
+    border-radius: 50% / 35%;
+    width: 180px;
+    height: 130px;
+}
+.pv-hero[data-photo-shape="star"]    .pv-photo {
+    border-radius: 0;
+    border: none;
+    box-shadow: none;
+    /* Estrella de 5 puntas. */
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+.pv-meta { min-width: 0; max-width: 720px; }
+.pv-name  { color: var(--name-color,  var(--fg)); }
+.pv-email { color: var(--email-color, var(--fg-dim)); }
+.pv-eyebrow {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--fg-dim);
+    font-weight: 700;
+}
+.pv-name {
+    margin: 4px 0 8px;
+    font-size: 38px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    line-height: 1;
+    word-break: break-word;
+}
+.pv-email {
+    /* color lo gestiona la regla anterior (var --email-color con fallback) */
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pv-body {
+    max-width: min(var(--window-max-width, 1200px), 100%);
+    margin: 0 auto;
+    padding: 28px 36px 60px;
+    box-sizing: border-box;
+}
+.pv-section-title {
+    margin: 28px 0 14px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--fg-dim);
+}
+.pv-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+}
+.pv-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 16px 18px;
+}
+.pv-card-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--fg-dim);
+    font-weight: 700;
+}
+.pv-card-val {
+    margin-top: 8px;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.3px;
+    color: var(--fg);
+}
+
+.pv-top-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.pv-top-list li {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 12px 14px;
+}
+.pv-top-list li.muted {
+    background: transparent;
+    border: 1px dashed var(--field-bd);
+    color: var(--fg-dim);
+    text-align: center;
+    font-size: 13px;
+}
+.pv-top-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+.pv-top-name { font-weight: 700; font-size: 14px; }
+.pv-top-time { color: var(--fg-dim); font-variant-numeric: tabular-nums; font-size: 12px; }
+.pv-top-bar {
+    height: 6px;
+    background: color-mix(in srgb, var(--fg) 8%, transparent);
+    border-radius: 999px;
+    overflow: hidden;
+}
+.pv-top-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg,
+        var(--accent),
+        color-mix(in srgb, var(--accent) 60%, var(--fg) 20%));
+    border-radius: 999px;
+    transition: width 0.3s ease;
+}
+
+.pv-actions {
+    margin-top: 36px;
+    display: flex;
+    gap: 10px;
+}
+
+/* --- Hero del perfil v2 (acciones del dueño) --------------------------- */
+.pv-hero { position: relative; }
+.pv-hero-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 4px;
+}
+.pv-edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: filter 0.12s ease, transform 0.12s ease;
+}
+.pv-edit-btn:hover { filter: brightness(1.08); transform: scale(1.04); }
+
+/* --- Widget grid -------------------------------------------------------- */
+/* Flex con wrap: los widgets viajan en la misma fila si caben, y dentro de la
+   fila se estiran proporcionalmente a su tamaño (small=1, medium=2, large=3,
+   full=fila entera). Si la fila no cabe, saltan a la siguiente. */
+.pv-widgets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    align-items: stretch;
+    max-width: min(var(--window-max-width, 100%), 100%);
+    margin-left: auto;
+    margin-right: auto;
+    font-family: var(--profile-font, inherit);
+}
+.pv-widget {
+    background: var(--window-bg, var(--bg-elev));
+    color: var(--window-text-color, var(--fg));
+    border: var(--window-border-width, 1px) solid var(--window-border-color, var(--line));
+    border-radius: var(--window-radius, 14px);
+    padding: 16px 18px;
+    min-width: 220px;
+    overflow: hidden;
+    box-sizing: border-box;
+    transition: background 0.15s ease, border-radius 0.15s ease,
+                border-width 0.15s ease, border-color 0.15s ease;
+}
+/* Texto secundario dentro de las ventanas (mensajes "Sin escucha aún", subs
+   de tracks, durations, "cuenta creada", etc.). Por defecto es el gris del
+   tema; el usuario puede cambiarlo desde el editor. */
+.pv-widget .muted,
+.pv-widget .pv-top-time,
+.pv-widget .pv-track-time,
+.pv-widget .pv-track-sub,
+.pv-widget .pv-album-meta,
+.pv-widget .pv-artist-time {
+    color: var(--window-muted-color, var(--fg-dim));
+}
+.pv-widget-small  { flex: 1 1 220px; }
+.pv-widget-medium { flex: 2 1 320px; }
+.pv-widget-large  { flex: 3 1 480px; }
+.pv-widget-full   { flex: 1 1 100%; }
+@media (max-width: 600px) {
+    .pv-widget,
+    .pv-widget-small,
+    .pv-widget-medium,
+    .pv-widget-large { flex: 1 1 100%; min-width: 0; }
+}
+.pv-widget-head { margin-bottom: 12px; }
+.pv-widget-title {
+    margin: 0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 700;
+    color: var(--window-title-color, var(--fg-dim));
+}
+.pv-widget-body { font-size: 13px; }
+.pv-stat-big {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 90px;
+}
+.pv-stat-big-val {
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: -0.8px;
+    color: inherit;
+}
+.pv-description {
+    margin: 0;
+    line-height: 1.55;
+    color: inherit;          /* hereda --window-text-color del .pv-widget */
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.pv-track-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.pv-track-list li {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 10px;
+    align-items: center;
+}
+.pv-track-rank {
+    color: var(--fg-dim);
+    font-weight: 800;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.pv-track-meta { min-width: 0; }
+.pv-track-title {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pv-track-sub {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pv-track-time {
+    font-size: 11px;
+    color: var(--fg-dim);
+    font-variant-numeric: tabular-nums;
+}
+
+.pv-album-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+}
+
+/* Grid de artistas favoritos: idéntico estructuralmente al de álbumes pero
+   con foto circular. Las imágenes las carga JS desde /api/artist-info. */
+.pv-artist-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 14px;
+}
+.pv-artist {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    text-align: center;
+    cursor: pointer;
+    color: inherit;
+    text-decoration: none;
+    transition: transform 0.15s ease;
+}
+.pv-artist:hover { transform: translateY(-2px); }
+.pv-artist:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 8px; }
+.pv-artist-photo {
+    width: 100%;
+    aspect-ratio: 1/1;
+    border-radius: 50%;
+    background: var(--bg-deep) center/cover no-repeat;
+    box-shadow: 0 4px 14px var(--shadow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--fg-dim);
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 6px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.pv-artist-photo.has-image { color: transparent; }
+.pv-artist:hover .pv-artist-photo {
+    box-shadow: 0 6px 18px var(--shadow), 0 0 0 2px var(--accent);
+}
+.pv-artist-name {
+    font-weight: 600;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+}
+.pv-artist-time { font-variant-numeric: tabular-nums; }
+.pv-album-cover {
+    aspect-ratio: 1/1;
+    background: var(--bg-deep) center/cover no-repeat;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg-dim);
+    font-size: 24px; font-weight: 800;
+}
+.pv-album-title {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pv-friends {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    gap: 10px;
+}
+.pv-friend {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    color: var(--fg);
+    text-decoration: none;
+    transition: transform 0.12s ease;
+}
+.pv-friend:hover { transform: translateY(-2px); }
+.pv-friend-photo {
     width: 56px;
     height: 56px;
+    border-radius: 50%;
     background: var(--bg-deep) center/cover no-repeat;
-    border-radius: 6px;
+    border: 1px solid var(--field-bd);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--fg-dim);
+    font-weight: 700;
+    font-size: 18px;
 }
-.np-title { font-weight: 600; }
-.now-playing audio { width: 360px; height: 36px; }
+.pv-friend-name {
+    font-size: 11px;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 70px;
+}
 
-.album-grid::-webkit-scrollbar { width: 10px; }
-.album-grid::-webkit-scrollbar-thumb {
-    background: color-mix(in srgb, currentColor 18%, transparent);
-    border-radius: 5px;
+.pv-anticipated-title { font-size: 16px; font-weight: 800; }
+.pv-anticipated-artist { margin-top: 4px; }
+.pv-anticipated-note { margin-top: 8px; line-height: 1.5; }
+
+/* iframe del modo avanzado */
+.pv-advanced-frame {
+    width: 100%;
+    min-height: 480px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--bg-elev);
 }
-.album-grid::-webkit-scrollbar-thumb:hover {
-    background: color-mix(in srgb, currentColor 28%, transparent);
+
+/* --- Edit profile ------------------------------------------------------ */
+.edit-profile {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 28px 36px 60px;
+    color: var(--fg);
 }
+/* Cabecera del editor con clases propias para que su color NO siga al
+   --name-color del usuario (siempre tipográficamente neutra). */
+.edit-eyebrow {
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--fg-dim);
+    font-weight: 700;
+}
+.edit-title {
+    margin: 4px 0 0;
+    font-size: 38px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    line-height: 1;
+    color: var(--fg);
+}
+.edit-profile-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.edit-actions { display: flex; gap: 10px; }
+.edit-save {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 13px;
+}
+.edit-save:hover { filter: brightness(1.08); }
+.edit-save:disabled { opacity: 0.5; cursor: default; }
+
+.edit-section {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin-bottom: 18px;
+}
+.edit-section-title {
+    margin: 0 0 12px;
+    font-size: 14px;
+    font-weight: 800;
+    letter-spacing: -0.2px;
+}
+.edit-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+@media (max-width: 700px) { .edit-grid-2 { grid-template-columns: 1fr; } }
+.edit-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 12px;
+}
+.edit-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--fg-dim);
+    font-weight: 700;
+}
+.edit-profile input[type=text],
+.edit-profile input[type=email],
+.edit-profile textarea {
+    background: var(--field-bg);
+    color: var(--fg);
+    border: 1px solid var(--field-bd);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+    resize: vertical;
+}
+.edit-profile input:focus,
+.edit-profile textarea:focus { border-color: var(--accent); }
+
+/* Selects con apariencia pill, alineada con el dropdown de orden de la app. */
+.edit-profile select,
+.edit-widget-controls select {
+    background: var(--field-bg);
+    color: var(--fg);
+    border: 1px solid var(--field-bd);
+    border-radius: 999px;
+    padding: 8px 36px 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--fg-dim) 50%),
+                      linear-gradient(135deg, var(--fg-dim) 50%, transparent 50%);
+    background-position: calc(100% - 18px) center, calc(100% - 13px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    transition: border-color 0.12s ease, background-color 0.12s ease;
+    box-sizing: border-box;
+}
+.edit-profile select:hover,
+.edit-widget-controls select:hover { border-color: var(--accent); }
+.edit-profile select:focus,
+.edit-widget-controls select:focus { border-color: var(--accent); }
+.edit-profile select option {
+    background: var(--bg-elev);
+    color: var(--fg);
+    padding: 10px 14px;
+    font-size: 13px;
+    letter-spacing: 0.4px;
+}
+
+.edit-photo-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 14px;
+}
+.edit-photo-preview {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    border: 2px dashed var(--field-bd);
+    background: var(--bg-deep) center/cover no-repeat;
+}
+.edit-photo-preview.has-image { border-style: solid; border-color: var(--accent); }
+
+/* Preview del marco PNG: la foto del usuario como base + el PNG superpuesto. */
+.edit-frame-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 14px;
+}
+.edit-frame-preview {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    border: 2px dashed var(--field-bd);
+    background: var(--bg-deep) center/cover no-repeat;
+    flex-shrink: 0;
+    overflow: visible;
+}
+.edit-frame-preview.has-frame { border-style: solid; border-color: var(--accent); }
+.edit-frame-preview #edit-frame-preview-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+    transform-origin: center center;
+}
+.edit-frame-controls { display: flex; flex-direction: column; gap: 8px; }
+
+/* Preview del fondo: rectángulo panorámico. */
+.edit-bg-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 14px;
+}
+.edit-bg-preview {
+    width: 220px;
+    height: 110px;
+    border-radius: 10px;
+    border: 2px dashed var(--field-bd);
+    background: var(--bg-deep) center/cover no-repeat;
+    flex-shrink: 0;
+}
+.edit-bg-preview.has-image { border-style: solid; border-color: var(--accent); }
+@media (max-width: 700px) {
+    .edit-bg-row { flex-direction: column; align-items: flex-start; }
+    .edit-bg-preview { width: 100%; height: 140px; }
+}
+
+.edit-subsection-title {
+    margin: 22px 0 6px;
+    font-size: 12px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--fg-dim);
+}
+.edit-veil-grid {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    gap: 14px;
+    margin-top: 6px;
+    align-items: end;
+}
+@media (max-width: 700px) { .edit-veil-grid { grid-template-columns: 1fr; } }
+.edit-profile input[type=color] {
+    background: var(--field-bg);
+    border: 1px solid var(--field-bd);
+    border-radius: 8px;
+    padding: 4px;
+    width: 56px;
+    height: 36px;
+    cursor: pointer;
+}
+.edit-profile input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+}
+/* Vista previa del velo en el editor: rectángulo panorámico que muestra
+   cómo quedará el color sobre el fondo elegido (o sobre un mosaico si no
+   hay fondo todavía). */
+.edit-veil-preview {
+    margin-top: 14px;
+    position: relative;
+    height: 140px;
+    border-radius: 10px;
+    overflow: hidden;
+    background:
+        repeating-conic-gradient(from 0deg,
+            color-mix(in srgb, var(--fg) 10%, var(--bg)) 0% 25%,
+            var(--bg-elev) 25% 50%) 0 0/24px 24px;
+    background-size: cover;
+    background-position: center;
+}
+.edit-veil-preview-veil {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    background-color: #000;
+    opacity: 0.65;
+    transition: width 0.12s ease, opacity 0.12s ease, background-color 0.12s ease;
+}
+.edit-veil-preview-label {
+    position: absolute;
+    bottom: 6px;
+    right: 10px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: rgba(255,255,255,0.85);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+
+.edit-widgets-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.edit-widget-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border: 1px solid var(--field-bd);
+    border-radius: 10px;
+    background: var(--bg);
+    opacity: 0.55;
+    transition: opacity 0.12s ease, border-color 0.12s ease;
+}
+.edit-widget-row.active {
+    opacity: 1;
+    border-color: var(--line);
+    background: color-mix(in srgb, var(--accent) 6%, var(--bg));
+}
+.edit-widget-main { flex: 1; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.edit-widget-name { font-size: 13px; font-weight: 600; }
+.edit-widget-controls { display: flex; gap: 6px; align-items: center; }
+.edit-widget-controls select,
+.edit-widget-controls button {
+    background: var(--field-bg);
+    color: var(--fg);
+    border: 1px solid var(--field-bd);
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 12px;
+    cursor: pointer;
+}
+.edit-widget-controls button:disabled { opacity: 0.3; cursor: default; }
+.edit-widget-controls button:not(:disabled):hover { border-color: var(--accent); }
+
+.edit-toggle { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.edit-toggle input { width: 16px; height: 16px; }
+
+.edit-friends { display: flex; flex-direction: column; gap: 12px; }
+.edit-friend-add { display: flex; gap: 8px; }
+.edit-friend-add input { flex: 1; }
+.edit-friends-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.edit-friends-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    font-size: 13px;
+}
+.edit-friend-remove {
+    background: transparent;
+    border: 1px solid var(--error);
+    color: var(--error);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.edit-friend-remove:hover { background: color-mix(in srgb, var(--error) 12%, transparent); }
+
+/* --- Cola de reproducción (columna real del layout) ------------------ */
+/* El panel forma parte del flex .app-middle. Cuando está cerrado, su ancho
+   es 0 (sin tomar espacio); al abrirlo crece a 340px y el contenido a la
+   izquierda se ajusta. La transición es de width, así anima la apertura. */
+.queue-panel {
+    width: 0;
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;             /* anchor del handle absoluto */
+    container-type: inline-size;    /* habilita @container queries para ajustar layout interno al ancho */
+    background: var(--bg-elev);
+    border-left: 1px solid var(--line);
+    transition: width 0.22s ease;
+    color: var(--fg);
+    display: flex;
+    flex-direction: column;
+}
+.queue-panel.open { width: var(--queue-width, 340px); }
+/* Mientras se arrastra el handle, sin transición — si no, el panel iría
+   con 220 ms de retraso respecto al ratón. */
+.queue-panel.resizing { transition: none; }
+/* Para que los hijos no colapsen durante la transición de width, los
+   forzamos al mismo ancho que el panel (la CSS var). Al cerrar quedan
+   ocultos por overflow. */
+.queue-panel > * { width: var(--queue-width, 340px); box-sizing: border-box; flex-shrink: 0; }
+.queue-panel > .queue-list { flex: 1; min-height: 0; overflow-y: auto; }
+@media (max-width: 760px) {
+    .queue-panel.open { width: 100%; }
+    .queue-panel > * { width: 100%; }
+}
+
+/* Handle de redimensionado: tira de 8 px en el borde izquierdo del panel.
+   Invisible salvo al hover. Cuando el panel está cerrado o en móvil, se
+   oculta para que no haya cursor ew-resize sobre la nada. */
+.queue-resize-handle {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: ew-resize;
+    z-index: 5;
+    background: transparent;
+    transition: background 0.12s ease;
+}
+.queue-resize-handle:hover { background: color-mix(in srgb, var(--accent) 28%, transparent); }
+.queue-panel.resizing .queue-resize-handle { background: color-mix(in srgb, var(--accent) 50%, transparent); }
+.queue-panel:not(.open) .queue-resize-handle { display: none; }
+@media (max-width: 760px) {
+    .queue-resize-handle { display: none; }
+}
+/* Cuando está anclada desde Ajustes, el botón × del header del panel
+   pierde sentido — lo ocultamos. */
+#app-screen.queue-pinned .queue-close { display: none; }
+
+.queue-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--line);
+}
+.queue-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+.queue-close {
+    background: transparent;
+    border: none;
+    color: var(--fg-dim);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 6px;
+    border-radius: 4px;
+}
+.queue-close:hover { color: var(--fg); background: var(--field-bg); }
+.queue-head-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.queue-clear {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--fg-dim);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+.queue-clear:hover { color: var(--fg); background: var(--field-bg); border-color: var(--fg-dim); }
+
+.queue-mode-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
+}
+.queue-mode-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--fg-dim);
+    font-weight: 700;
+}
+.queue-mode-select {
+    background: var(--field-bg);
+    color: var(--fg);
+    border: 1px solid var(--field-bd);
+    border-radius: 999px;
+    padding: 7px 32px 7px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.4px;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--fg-dim) 50%),
+                      linear-gradient(135deg, var(--fg-dim) 50%, transparent 50%);
+    background-position: calc(100% - 16px) center, calc(100% - 11px) center;
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+}
+.queue-mode-select:hover,
+.queue-mode-select:focus { border-color: var(--accent); }
+
+.queue-list {
+    flex: 1;
+    overflow-y: auto;
+    list-style: none;
+    margin: 0;
+    padding: 8px 0;
+    counter-reset: queue-counter;
+}
+.queue-empty {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--fg-dim);
+    font-size: 12px;
+}
+.queue-section-label {
+    padding: 10px 16px 4px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--fg-dim);
+    font-weight: 700;
+}
+.queue-item {
+    display: grid;
+    grid-template-columns: 28px 36px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 16px;
+    cursor: pointer;
+    transition: background 0.12s ease;
+    border: none;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    width: 100%;
+    font-family: inherit;
+    font-size: 12px;
+}
+.queue-item:hover { background: var(--field-bg); }
+.queue-item.playing { background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.queue-item-num {
+    color: var(--fg-dim);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+}
+.queue-item-cover {
+    width: 36px; height: 36px;
+    background: var(--bg-deep) center/cover no-repeat;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+.queue-item-meta { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+/* Texto envolvible: si el panel se hace estrecho, título y subtítulo saltan
+   a la siguiente línea en vez de cortarse con "…". overflow-wrap: anywhere
+   permite romper palabras largas (URLs, nombres pegados) cuando hace falta. */
+.queue-item-title {
+    font-weight: 600;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.3;
+}
+.queue-item-sub {
+    color: var(--fg-dim);
+    font-size: 11px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    line-height: 1.3;
+}
+.queue-item-dur {
+    color: var(--fg-dim);
+    font-variant-numeric: tabular-nums;
+    font-size: 11px;
+    align-self: center;
+}
+
+/* A medida que el panel se estrecha por arrastre, vamos sacrificando piezas
+   no esenciales para que el título tenga sitio donde envolverse. Usamos
+   container queries sobre el propio panel (no el viewport): la regla aplica
+   cuando ANCHO DEL PANEL pasa el umbral, independientemente del viewport. */
+@container (max-width: 220px) {
+    .queue-item { grid-template-columns: 32px 1fr auto; padding-left: 10px; padding-right: 10px; }
+    .queue-item-num { display: none; }
+}
+@container (max-width: 170px) {
+    .queue-item { grid-template-columns: 32px 1fr; }
+    .queue-item-dur { display: none; }
+}
+@container (max-width: 140px) {
+    .queue-item { grid-template-columns: 1fr; padding-left: 8px; padding-right: 8px; }
+    .queue-item-cover { display: none; }
+}
+
+/* --- Scrollbar coherente con la paleta ------------------------------- */
+* { scrollbar-color: color-mix(in srgb, var(--fg) 30%, transparent) transparent; scrollbar-width: thin; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--fg) 25%, transparent);
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in srgb, var(--accent) 60%, transparent);
+    background-clip: padding-box;
+    border: 2px solid transparent;
+}
+*::-webkit-scrollbar-corner { background: transparent; }

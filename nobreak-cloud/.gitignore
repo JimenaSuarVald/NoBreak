@@ -1,0 +1,13 @@
+# Cache de runtime de wrangler (account info cacheada, builds, etc).
+.wrangler/
+
+# Deps node (si en algún momento se instalan localmente).
+node_modules/
+
+# Variables sensibles (CLOUDFLARE_API_TOKEN, etc.) si se usa .dev.vars.
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+
+# Logs locales de wrangler dev/tail.
+*.log

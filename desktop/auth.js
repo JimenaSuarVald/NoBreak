@@ -39,17 +39,18 @@ function hasAnyUser() {
   return db.get().prepare('SELECT COUNT(*) AS n FROM users').get().n > 0;
 }
 
-function createUser(username, password) {
+function createUser(username, password, opts = {}) {
   const norm = normalizeUsername(username);
   if (!norm) throw new Error('username vacío');
   if (!password || password.length < 6) {
     throw new Error('La contraseña debe tener al menos 6 caracteres');
   }
+  const email = (opts.email || '').trim() || null;
   const { hash, salt, iter } = hashPassword(password);
   const info = db.get().prepare(
-    `INSERT INTO users (username, pass_hash, salt, iter_count, created_at)
-     VALUES (?, ?, ?, ?, ?)`
-  ).run(norm, hash, salt, iter, Date.now());
+    `INSERT INTO users (username, pass_hash, salt, iter_count, created_at, email)
+     VALUES (?, ?, ?, ?, ?, ?)`
+  ).run(norm, hash, salt, iter, Date.now(), email);
   return { id: info.lastInsertRowid, username: norm };
 }
 
@@ -63,9 +64,58 @@ function verifyUser(username, password) {
   return ok ? { id: row.id, username: row.username } : null;
 }
 
+const PROFILE_FIELDS = `
+  id, username, email, photo_path, email_verified, created_at,
+  display_name, description, profile_widgets, profile_html, advanced_mode,
+  profile_background, profile_frame
+`;
+
 function userById(id) {
-  const row = db.get().prepare('SELECT id, username FROM users WHERE id = ?').get(id);
+  const row = db.get().prepare(
+    `SELECT ${PROFILE_FIELDS} FROM users WHERE id = ?`
+  ).get(id);
   return row || null;
+}
+
+function userByUsername(username) {
+  const norm = normalizeUsername(username);
+  const row = db.get().prepare(
+    `SELECT ${PROFILE_FIELDS} FROM users WHERE username = ?`
+  ).get(norm);
+  return row || null;
+}
+
+function setProfilePhoto(userId, photoPath) {
+  db.get().prepare('UPDATE users SET photo_path = ? WHERE id = ?').run(photoPath || null, userId);
+}
+
+function setProfileBackground(userId, bgPath) {
+  db.get().prepare('UPDATE users SET profile_background = ? WHERE id = ?').run(bgPath || null, userId);
+}
+
+function setProfileFrame(userId, framePath) {
+  db.get().prepare('UPDATE users SET profile_frame = ? WHERE id = ?').run(framePath || null, userId);
+}
+
+// Aplica un parche parcial a la fila del usuario. Sólo se aceptan los campos
+// listados (whitelist). Devuelve el row completo actualizado.
+const PATCHABLE = new Set([
+  'display_name', 'email', 'description',
+  'profile_widgets', 'profile_html', 'advanced_mode',
+  'ui_settings',
+]);
+function patchUser(userId, patch) {
+  const sets = [];
+  const args = [];
+  for (const [k, v] of Object.entries(patch || {})) {
+    if (!PATCHABLE.has(k)) continue;
+    sets.push(`${k} = ?`);
+    args.push(v == null ? null : (typeof v === 'boolean' ? (v ? 1 : 0) : v));
+  }
+  if (!sets.length) return userById(userId);
+  args.push(userId);
+  db.get().prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`).run(...args);
+  return userById(userId);
 }
 
 // --- sessions ---------------------------------------------------------------
@@ -104,6 +154,7 @@ function revokeSession(token) {
 }
 
 module.exports = {
-  hasAnyUser, createUser, verifyUser, userById,
+  hasAnyUser, createUser, verifyUser, userById, userByUsername,
+  setProfilePhoto, setProfileBackground, setProfileFrame, patchUser,
   issueSession, verifySession, revokeSession,
 };

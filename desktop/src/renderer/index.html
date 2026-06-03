@@ -12,18 +12,102 @@
     <!-- LOGIN SCREEN -->
     <section id="login-screen" class="screen">
         <div class="login-card">
-            <h1 id="login-title">NoBreak</h1>
-            <p id="login-sub" class="muted">Cargando…</p>
+            <h1>NoBreak</h1>
+            <p class="muted">Inicia sesión para acceder a tu música.</p>
             <form id="login-form" autocomplete="on">
                 <label class="muted small">Usuario</label>
                 <input id="login-user" type="text" autocomplete="username" required>
                 <label class="muted small">Contraseña</label>
-                <input id="login-pass" type="password" autocomplete="current-password" required minlength="6">
-                <label id="login-confirm-label" class="muted small hidden">Repite la contraseña</label>
-                <input id="login-confirm" type="password" autocomplete="new-password" minlength="6" class="hidden">
+                <div class="pass-wrap">
+                    <input id="login-pass" type="password" autocomplete="current-password" required minlength="6">
+                    <button type="button" class="pass-toggle" data-target="login-pass" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+                        <svg class="eye-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <svg class="eye-off hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.92 18.92 0 0 1 5.06-6"/>
+                            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.92 18.92 0 0 1-3.16 4.19"/>
+                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                    </button>
+                </div>
                 <div id="login-error" class="error"></div>
                 <button id="login-submit" type="submit">Entrar</button>
             </form>
+        </div>
+        <p class="login-foot small">
+            ¿No tienes cuenta? <a href="#" id="link-register">Crear cuenta</a>
+        </p>
+    </section>
+
+    <!-- REGISTER SCREEN -->
+    <section id="register-screen" class="screen hidden">
+        <div class="login-card">
+            <h1>Crear cuenta</h1>
+            <p class="muted">Define tu usuario, correo y contraseña.</p>
+            <form id="register-form" autocomplete="off">
+                <label class="muted small">Usuario</label>
+                <input id="reg-user" type="text" autocomplete="username" required>
+                <label class="muted small">Correo</label>
+                <input id="reg-email" type="email" autocomplete="email" required>
+                <label class="muted small">Contraseña</label>
+                <div class="pass-wrap">
+                    <input id="reg-pass" type="password" autocomplete="new-password" required minlength="6">
+                    <button type="button" class="pass-toggle" data-target="reg-pass" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+                        <svg class="eye-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <svg class="eye-off hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.92 18.92 0 0 1 5.06-6"/>
+                            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.92 18.92 0 0 1-3.16 4.19"/>
+                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                    </button>
+                </div>
+                <label class="muted small">Repite la contraseña</label>
+                <div class="pass-wrap">
+                    <input id="reg-confirm" type="password" autocomplete="new-password" required minlength="6">
+                    <button type="button" class="pass-toggle" data-target="reg-confirm" aria-label="Mostrar contraseña" title="Mostrar contraseña">
+                        <svg class="eye-on" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <svg class="eye-off hidden" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 20c-7 0-11-8-11-8a18.92 18.92 0 0 1 5.06-6"/>
+                            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 4c7 0 11 8 11 8a18.92 18.92 0 0 1-3.16 4.19"/>
+                            <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+                            <line x1="1" y1="1" x2="23" y2="23"/>
+                        </svg>
+                    </button>
+                </div>
+                <div id="register-error" class="error"></div>
+                <button id="register-submit" type="submit">Crear cuenta</button>
+            </form>
+        </div>
+        <p class="login-foot small">
+            ¿Ya tienes cuenta? <a href="#" id="link-login">Inicia sesión</a>
+        </p>
+    </section>
+
+    <!-- PROFILE PHOTO SCREEN (post-registro) -->
+    <section id="photo-screen" class="screen hidden">
+        <div class="login-card">
+            <h1>Foto de perfil</h1>
+            <p class="muted">Añade una foto a tu cuenta. Puedes saltar este paso y hacerlo después.</p>
+            <div class="photo-pick">
+                <div id="photo-preview" class="photo-preview"></div>
+                <input id="photo-input" type="file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+                <button id="photo-pick-btn" type="button" class="login-card-btn-secondary">Elegir imagen…</button>
+            </div>
+            <div id="photo-error" class="error"></div>
+            <div class="photo-actions">
+                <button id="photo-skip" type="button" class="login-card-btn-secondary">Saltar</button>
+                <button id="photo-save" type="button" disabled>Guardar foto</button>
+            </div>
         </div>
     </section>
 
@@ -40,56 +124,412 @@
     <!-- MAIN UI -->
     <section id="app-screen" class="screen hidden">
         <header class="app-header">
-            <nav class="top-tabs">
-                <button class="tab active" data-tab="albums">Álbumes</button>
-                <button class="tab" data-tab="artists">Artistas</button>
-                <button class="tab" data-tab="genres">Géneros</button>
-                <button class="tab" data-tab="playlists">Listas</button>
-            </nav>
+            <nav class="top-tabs" id="tabs-bar" aria-label="Pestañas"></nav>
+            <button id="tab-add" class="tab-add" type="button" title="Nueva pestaña" aria-label="Nueva pestaña">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+            </button>
+            <div id="tab-add-menu" class="popover hidden" role="menu" aria-label="Tipo de pestaña"></div>
             <div class="header-tools">
-                <button id="theme-toggle" class="icon-btn" title="Cambiar tema" aria-label="Cambiar tema">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-                        <path d="M12 4.5a7.5 7.5 0 0 0 0 15 7.5 7.5 0 0 1 0-15zm0-2a9.5 9.5 0 1 0 9.5 9.5A9.5 9.5 0 0 0 12 2.5z"/>
+                <input id="search" type="search" placeholder="Buscar…" autocomplete="off">
+                <button id="btn-queue" class="boton-perfil" title="Cola de reproducción" aria-label="Cola de reproducción" aria-expanded="false">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="8"  y1="6"  x2="21" y2="6"/>
+                        <line x1="8"  y1="12" x2="21" y2="12"/>
+                        <line x1="8"  y1="18" x2="21" y2="18"/>
+                        <circle cx="4" cy="6"  r="1"/>
+                        <circle cx="4" cy="12" r="1"/>
+                        <circle cx="4" cy="18" r="1"/>
                     </svg>
                 </button>
-                <span id="user-badge" class="muted small"></span>
-                <input id="search" type="search" placeholder="Buscar…" autocomplete="off">
+                <button id="btn-perfil" class="boton-perfil" title="Abrir perfil" aria-label="Abrir perfil">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </button>
             </div>
         </header>
 
+        <!-- Fila central: a la izquierda el contenido (status, toolbar, vistas)
+             y a la derecha la cola de reproducción como columna real del flex
+             — al abrirla "comparte" espacio con el contenido en lugar de
+             solaparlo. Header/footer siguen siendo de ancho completo. -->
+        <div class="app-middle">
+        <div class="app-content">
         <div id="status-bar" class="status-bar muted small"></div>
+
+        <!-- Toolbar inline. Siempre presente en el flujo (para que el área
+             central conserve su altura cuando colapsa) pero oculto fuera de
+             las pestañas musicales. -->
+        <div id="album-toolbar" class="album-toolbar album-toolbar--off">
+            <span class="album-toolbar-label">Ordenar por</span>
+            <button id="album-sort" class="album-sort-btn" type="button"
+                    aria-haspopup="listbox" aria-expanded="false">
+                <span id="album-sort-label">Título (A → Z)</span>
+                <svg class="album-sort-chev" viewBox="0 0 24 24" width="12" height="12"
+                     fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </button>
+            <div id="album-sort-menu" class="album-sort-menu popover hidden" role="listbox"></div>
+        </div>
 
         <main id="main-grid" class="album-grid"></main>
 
-        <!-- Artist description strip (Wikipedia / Last.fm). Hidden until a song is playing. -->
-        <div id="artist-strip" class="artist-strip hidden">
-            <div class="ai-thumb" id="ai-thumb"></div>
-            <div class="ai-body">
-                <div class="ai-name" id="ai-name"></div>
-                <div class="ai-extract" id="ai-extract"></div>
-                <div class="ai-links">
-                    <a class="ai-link" id="ai-link-wp" href="#" target="_blank" rel="noopener">Wikipedia</a>
-                    <a class="ai-link" id="ai-link-lf" href="#" target="_blank" rel="noopener">Last.fm</a>
-                    <a class="ai-link" id="ai-link-rym" href="#" target="_blank" rel="noopener">RateYourMusic</a>
-                    <span class="ai-source muted small" id="ai-source"></span>
+        <!-- Vista de artista único (banner + foto + descripción) -->
+        <section id="artist-view" class="artist-view hidden"></section>
+        <section id="album-view" class="album-view hidden"></section>
+
+        <!-- Vista de perfil del usuario -->
+        <section id="profile-view" class="profile-view hidden"></section>
+
+        <!-- Panel de ajustes: se muestra en lugar del grid cuando la tab Settings está activa -->
+        <section id="settings-panel" class="settings-panel hidden">
+            <h2>Ajustes</h2>
+
+            <div class="settings-row">
+                <div class="settings-label">
+                    <div class="settings-name">Cerrar sesión</div>
+                    <div class="settings-desc">Cierra tu sesión actual y vuelve a la pantalla de inicio.</div>
+                </div>
+                <button id="settings-logout" type="button" class="settings-btn-action">Cerrar sesión</button>
+            </div>
+
+            <div class="settings-row">
+                <div class="settings-label">
+                    <div class="settings-name">Actualizar biblioteca y géneros</div>
+                    <div class="settings-desc">Re-escanea la carpeta de música y refresca las etiquetas de MusicBrainz. Útil si has añadido música nueva o algunos álbumes salen como "Sin clasificar".</div>
+                </div>
+                <div class="settings-lastfm-actions">
+                    <button id="settings-rescan" type="button" class="settings-btn-action">Re-escanear</button>
+                    <button id="settings-refresh-tags" type="button" class="settings-btn-action ghost">Solo tags</button>
                 </div>
             </div>
-            <button class="ai-toggle" id="ai-toggle" title="Expandir">▾</button>
-        </div>
+            <div class="settings-row">
+                <div class="settings-label">
+                    <div class="settings-name">Cola siempre visible</div>
+                    <div class="settings-desc">Mantén la cola de reproducción anclada a la derecha en lugar de tener que abrirla con el botón.</div>
+                </div>
+                <button id="settings-queue-pinned" class="settings-btn" type="button" aria-pressed="false">
+                    <span class="settings-tema-track"><span class="settings-tema-thumb"></span></span>
+                    <span id="settings-queue-pinned-label">Off</span>
+                </button>
+            </div>
+
+            <div class="settings-row settings-row-stack">
+                <div class="settings-label">
+                    <div class="settings-name">Tamaño de los álbumes</div>
+                    <div class="settings-desc">Tamaño mínimo de las miniaturas en los listados (álbumes, artistas, géneros, playlists).</div>
+                </div>
+                <div class="settings-album-size" role="radiogroup" aria-label="Tamaño de los álbumes">
+                    <button type="button" class="settings-size-btn" data-px="100">Muy pequeño</button>
+                    <button type="button" class="settings-size-btn" data-px="140">Pequeño</button>
+                    <button type="button" class="settings-size-btn" data-px="180">Mediano</button>
+                    <button type="button" class="settings-size-btn" data-px="240">Grande</button>
+                    <button type="button" class="settings-size-btn" data-px="300">Muy grande</button>
+                </div>
+                <div class="album-size-slider-row">
+                    <input type="range" id="album-size-slider" min="80" max="360" step="5" value="180" aria-label="Tamaño en píxeles">
+                    <span id="album-size-value" class="album-size-value">180 px</span>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3 class="settings-section-title">Apariencia</h3>
+                <p class="settings-section-desc">Cambia el conjunto completo de colores con un preset, y luego ajusta cada color a tu gusto.</p>
+
+                <div class="settings-row settings-row-stack">
+                    <div class="settings-label">
+                        <div class="settings-name">Estilo visual</div>
+                        <div class="settings-desc">Cada preset es una paleta coherente; al elegir uno se borran los retoques manuales que hayas hecho.</div>
+                    </div>
+                    <div id="theme-presets" class="theme-presets-grid"></div>
+                </div>
+
+                <div class="settings-row settings-row-stack">
+                    <div class="settings-label">
+                        <div class="settings-name">Colores</div>
+                        <div class="settings-desc">Cada cambio se guarda automáticamente. Pulsa "Restablecer al preset" para volver a la paleta base.</div>
+                    </div>
+                    <div id="color-pickers" class="color-pickers-grid"></div>
+                    <div class="settings-lastfm-actions">
+                        <button id="theme-reset" type="button" class="settings-btn-action ghost">Restablecer al preset</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <h3 class="settings-section-title">Accesibilidad</h3>
+                <p class="settings-section-desc">Ajusta el tamaño del texto, la tipografía y los colores de lectura.</p>
+
+                <div class="settings-row settings-row-stack">
+                    <div class="settings-label">
+                        <div class="settings-name">Tamaño del texto</div>
+                        <div class="settings-desc">Escala todo el contenido de la app entre 50 % y 200 %.</div>
+                    </div>
+                    <div class="album-size-slider-row">
+                        <input type="range" id="text-scale-slider" min="50" max="200" step="5" value="100" aria-label="Escala del texto en porcentaje">
+                        <span id="text-scale-value" class="album-size-value">100 %</span>
+                    </div>
+                </div>
+
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <div class="settings-name">Tipografía</div>
+                        <div class="settings-desc">Familia de fuentes usada en toda la app.</div>
+                    </div>
+                    <select id="font-family-select" class="genres-filter-select">
+                        <option value="system">Sistema (Segoe UI)</option>
+                        <option value="sans">Sans serif (Inter / Helvetica)</option>
+                        <option value="serif">Serif (Georgia)</option>
+                        <option value="mono">Monoespaciada (Consolas)</option>
+                    </select>
+                </div>
+
+                <div class="settings-row settings-row-stack">
+                    <div class="settings-label">
+                        <div class="settings-name">Color del texto</div>
+                        <div class="settings-desc">Texto principal y texto tenue (subtítulos, descripciones). Comparte estado con los selectores de la sección Apariencia.</div>
+                    </div>
+                    <div id="a11y-color-pickers" class="color-pickers-grid"></div>
+                </div>
+
+                <div class="settings-row">
+                    <div class="settings-label">
+                        <div class="settings-name">Restablecer accesibilidad</div>
+                        <div class="settings-desc">Vuelve al tamaño 100 % y a la tipografía del sistema. Los colores se restauran desde el botón "Restablecer al preset" de Apariencia.</div>
+                    </div>
+                    <button id="a11y-reset" class="settings-btn-action ghost" type="button">Restablecer</button>
+                </div>
+            </div>
+
+            <!-- NoBreak Cloud: vincula este .exe a una cuenta global del Worker
+                 central (nobreak-cloud). El flujo es: el usuario abre la web
+                 del cloud en su navegador → login → genera código 6 dígitos →
+                 lo pega aquí. -->
+            <div class="settings-section">
+                <h3 class="settings-section-title">NoBreak Cloud</h3>
+                <p class="settings-section-desc">
+                    Vincula esta instalación con tu cuenta de NoBreak Cloud.
+                    Cuando esté lista la federación (próxima fase), podrás
+                    abrir tu biblioteca desde cualquier dispositivo con el
+                    mismo usuario/contraseña — sin reenviarte URLs de tunnel.
+                </p>
+
+                <div class="settings-row settings-row-stack">
+                    <div class="settings-label">
+                        <div class="settings-name">Estado</div>
+                        <div class="settings-desc" id="settings-cloud-status">Cargando…</div>
+                    </div>
+
+                    <!-- Form de vinculación. Sólo visible cuando no hay vínculo. -->
+                    <form id="settings-cloud-form" class="settings-lastfm-creds hidden">
+                        <input id="settings-cloud-code" type="text" class="settings-input" placeholder="Código de 6 dígitos" autocomplete="off" inputmode="numeric" maxlength="6" spellcheck="false">
+                        <input id="settings-cloud-label" type="text" class="settings-input" placeholder="Etiqueta (opcional, p. ej. PC del salón)" autocomplete="off" spellcheck="false" maxlength="80">
+                        <button id="settings-cloud-pair" type="submit" class="settings-btn-action">Vincular</button>
+                        <div id="settings-cloud-error" class="settings-lastfm-error hidden"></div>
+                    </form>
+
+                    <!-- Acciones cuando ya está vinculado. -->
+                    <div class="settings-lastfm-actions">
+                        <button id="settings-cloud-open" type="button" class="settings-btn-action ghost hidden" title="Abrir la web del cloud en el navegador">Generar código en la nube</button>
+                        <button id="settings-cloud-unlink" type="button" class="settings-btn-action ghost hidden">Desvincular</button>
+                    </div>
+                </div>
+
+                <!-- URL del tunnel: la pega el usuario tras lanzar cloudflared.
+                     El .exe la publica al Worker cada 60 s. Necesaria para que
+                     en el hito C.2 el Worker sepa adónde proxear. -->
+                <div class="settings-row settings-row-stack" id="settings-cloud-tunnel-row">
+                    <div class="settings-label">
+                        <div class="settings-name">URL del tunnel</div>
+                        <div class="settings-desc" id="settings-cloud-tunnel-status">Si no está vinculado, esta URL no se publica.</div>
+                    </div>
+                    <form id="settings-cloud-tunnel-form" class="settings-lastfm-creds">
+                        <input id="settings-cloud-tunnel" type="url" class="settings-input" placeholder="https://xxx.trycloudflare.com" autocomplete="off" spellcheck="false" maxlength="500">
+                        <button id="settings-cloud-tunnel-save" type="submit" class="settings-btn-action">Guardar</button>
+                        <div id="settings-cloud-tunnel-error" class="settings-lastfm-error hidden"></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Last.fm scrobbling. Necesita una API key y un secret del usuario
+                 (se registra una app en https://www.last.fm/api/account/create). -->
+            <div class="settings-section">
+                <h3 class="settings-section-title">Last.fm</h3>
+                <p class="settings-section-desc">
+                    Scrobblea automáticamente la música que escuches. Sólo necesitas
+                    tu usuario y contraseña de Last.fm — las credenciales de la app
+                    las gestiona el instalador.
+                </p>
+
+                <div class="settings-row settings-row-stack">
+                    <div class="settings-label">
+                        <div class="settings-name">Cuenta de Last.fm</div>
+                        <div class="settings-desc" id="settings-lastfm-status">No conectado.</div>
+                    </div>
+                    <!-- Form de "Mobile Session": user+pass directos. Sólo guardamos
+                         la session_key que devuelva Last.fm, la password se descarta. -->
+                    <form id="settings-lastfm-form" class="settings-lastfm-creds">
+                        <input id="settings-lastfm-user" type="text" class="settings-input" placeholder="Usuario de Last.fm" autocomplete="off" spellcheck="false">
+                        <input id="settings-lastfm-pass" type="password" class="settings-input" placeholder="Contraseña" autocomplete="off" spellcheck="false">
+                        <button id="settings-lastfm-login" type="submit" class="settings-btn-action">Iniciar sesión</button>
+                        <div id="settings-lastfm-error" class="settings-lastfm-error hidden"></div>
+                    </form>
+                    <div class="settings-lastfm-actions">
+                        <button id="settings-lastfm-disconnect" type="button" class="settings-btn-action ghost hidden">Desconectar</button>
+                        <button id="settings-lastfm-flush" type="button" class="settings-btn-action ghost hidden" title="Reintentar scrobbles guardados sin conexión">Reintentar cola</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        </div><!-- /.app-content -->
+
+        <!-- Cola: columna real al lado del contenido. Al cerrarla pasa a
+             width:0 (sin solapar nada); el contenido recupera el ancho. -->
+        <aside id="queue-panel" class="queue-panel" aria-hidden="true">
+            <header class="queue-head">
+                <h3 class="queue-title">Cola de reproducción</h3>
+                <div class="queue-head-actions">
+                    <button id="queue-clear" class="queue-clear" type="button" title="Vaciar cola" aria-label="Vaciar cola">Vaciar</button>
+                    <button id="queue-close" class="queue-close" type="button" aria-label="Cerrar cola">×</button>
+                </div>
+            </header>
+            <div class="queue-mode-row">
+                <label for="queue-mode" class="queue-mode-label">Al terminar la cola</label>
+                <select id="queue-mode" class="queue-mode-select">
+                    <option value="next-album">Siguiente álbum del artista</option>
+                    <option value="stop">Detenerse</option>
+                    <option value="repeat-album">Repetir álbum</option>
+                </select>
+            </div>
+            <ol id="queue-list" class="queue-list"></ol>
+        </aside>
+        </div><!-- /.app-middle -->
 
         <footer class="now-playing">
-            <div class="np-cover" id="np-cover"></div>
-            <div class="np-info">
-                <div id="np-title" class="np-title">Selecciona una canción</div>
-                <div id="np-meta"  class="np-meta muted small"></div>
+            <div class="np-left">
+                <div class="np-cover" id="np-cover"></div>
+                <div class="np-info">
+                    <div id="np-title" class="np-title">Selecciona una canción</div>
+                    <div id="np-meta"  class="np-meta muted small"></div>
+                </div>
+                <button id="btn-like" class="np-like-btn" type="button" title="Me gusta" aria-label="Me gusta" aria-pressed="false">
+                    <svg id="icon-like-outline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    <svg id="icon-like-filled" class="hidden" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                </button>
+                <button id="btn-np-add" class="np-like-btn" type="button" title="Añadir a playlist" aria-label="Añadir a playlist">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                </button>
             </div>
-            <audio id="audio" controls preload="metadata"></audio>
+
+            <div class="np-center">
+                <div class="np-controls">
+                    <button id="btn-prev" class="np-btn" title="Anterior" aria-label="Canción anterior">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M6 6h2v12H6zM9.5 12 20 6v12z"/></svg>
+                    </button>
+                    <button id="btn-back10" class="np-btn np-skip" title="Atrás 10 s" aria-label="Atrás 10 segundos">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 12a9 9 0 1 0 3-6.7"/>
+                            <polyline points="3 4 3 10 9 10"/>
+                        </svg>
+                        <span class="np-btn-num">10</span>
+                    </button>
+                    <button id="btn-play" class="np-btn np-btn-main" title="Reproducir" aria-label="Reproducir o pausar">
+                        <svg id="icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M5 3v18l16-9z"/></svg>
+                        <svg id="icon-pause" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+                    </button>
+                    <button id="btn-fwd10" class="np-btn np-skip" title="Adelante 10 s" aria-label="Adelante 10 segundos">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 12a9 9 0 1 1-3-6.7"/>
+                            <polyline points="21 4 21 10 15 10"/>
+                        </svg>
+                        <span class="np-btn-num">10</span>
+                    </button>
+                    <button id="btn-next" class="np-btn" title="Siguiente" aria-label="Siguiente canción">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M16 6h2v12h-2zM4 6v12l10.5-6z"/></svg>
+                    </button>
+                </div>
+                <div class="np-progress">
+                    <span class="np-time" id="np-time-cur">0:00</span>
+                    <input type="range" id="np-seek" class="np-slider np-slider-seek" min="0" max="1000" value="0" step="1" aria-label="Posición">
+                    <span class="np-time" id="np-time-tot">0:00</span>
+                </div>
+            </div>
+
+            <div class="np-right">
+                <div id="np-rating" class="np-rating hidden" aria-label="Tu valoración del álbum"></div>
+                <button id="btn-shuffle" class="np-btn np-btn-small" type="button" title="Aleatorio" aria-label="Aleatorio" aria-pressed="false">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="16 3 21 3 21 8"/>
+                        <line x1="4" y1="20" x2="21" y2="3"/>
+                        <polyline points="21 16 21 21 16 21"/>
+                        <line x1="15" y1="15" x2="21" y2="21"/>
+                        <line x1="4" y1="4"  x2="9"  y2="9"/>
+                    </svg>
+                </button>
+                <button id="btn-mute" class="np-btn np-btn-small" title="Silenciar" aria-label="Silenciar">
+                    <svg id="icon-vol-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/>
+                        <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+                        <path d="M18.5 5.5a9 9 0 0 1 0 13"/>
+                    </svg>
+                    <svg id="icon-vol-off" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor"/>
+                        <line x1="22" y1="9"  x2="16" y2="15"/>
+                        <line x1="16" y1="9"  x2="22" y2="15"/>
+                    </svg>
+                </button>
+                <input type="range" id="np-vol" class="np-slider np-slider-vol" min="0" max="100" value="100" step="1" aria-label="Volumen">
+            </div>
+
+            <audio id="audio" preload="metadata"></audio>
         </footer>
 
         <!-- Add-to-playlist popover. JS positions and shows it near the clicked "+" button. -->
         <div id="add-popover" class="popover hidden" role="menu" aria-label="Añadir a playlist"></div>
+
+        <!-- Menú contextual (click derecho) sobre álbumes y canciones. -->
+        <div id="context-menu" class="popover hidden" role="menu" aria-label="Acciones"></div>
+
+        <!-- Modal de "Me Gusta" de un perfil. Se abre al pulsar el botón
+             del widget liked-songs en cualquier perfil. -->
+        <div id="liked-modal" class="liked-modal hidden" role="dialog" aria-modal="true" aria-labelledby="liked-modal-title">
+            <div class="liked-modal-content">
+                <header class="liked-modal-head">
+                    <h2 id="liked-modal-title" class="liked-modal-title">Me Gusta</h2>
+                    <button id="liked-modal-close" class="liked-modal-close" type="button" aria-label="Cerrar">×</button>
+                </header>
+                <div id="liked-modal-body" class="liked-modal-body"></div>
+            </div>
+        </div>
     </section>
 
-    <script src="renderer.js"></script>
+    <!-- Renderer dividido en módulos. Orden estricto: state primero (export
+         de let/const compartidos), main al final (boot IIFE que invoca el
+         setup de los demás). El resto comparte ámbito global de script no-module.
+         El web-shim va ANTES de todos para que window.api esté disponible en
+         el navegador (en Electron el preload ya lo expone y el shim es no-op). -->
+    <script src="web-shim.js"></script>
+    <script src="renderer-state.js"></script>
+    <script src="renderer-sync.js"></script>
+    <script src="renderer-appearance.js"></script>
+    <script src="renderer-auth.js"></script>
+    <script src="renderer-profile.js"></script>
+    <script src="renderer-library.js"></script>
+    <script src="renderer-playback.js"></script>
+    <script src="renderer-playlists.js"></script>
+    <script src="renderer-main.js"></script>
 </body>
 </html>

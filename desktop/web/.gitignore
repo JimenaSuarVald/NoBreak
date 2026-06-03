@@ -1,4 +1,0 @@
-# El zip de distribución (~52 MB) se reconstruye desde NoBreak_Project
-# con `mvnw -P dist clean package`. No tiene sentido versionarlo: para
-# publicarlo en producción usa una release de GitHub, un CDN o git-lfs.
-NoBreak-windows.zip

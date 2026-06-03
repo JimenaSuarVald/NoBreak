@@ -1,0 +1,12 @@
+{
+  "name": "nobreak-cloud",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Backend central de NoBreak en Cloudflare Workers: cuentas globales, pairing y relay hacia los .exe de cada usuario.",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  }
+}
