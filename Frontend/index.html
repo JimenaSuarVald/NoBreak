@@ -9,8 +9,56 @@
 </head>
 <body>
 
+    <!-- LANDING / pantalla de bienvenida. Es la primera vista para todo
+         visitante no logueado. La navegación al login se hace con el botón
+         de arriba a la derecha. -->
+    <section id="landing-screen" class="screen">
+        <header class="landing-header">
+            <div class="landing-brand">NoBreak</div>
+            <button id="landing-login-btn" type="button" class="landing-login-btn">Iniciar sesión</button>
+        </header>
+        <main class="landing-main">
+            <h1 class="landing-title">NoBreak</h1>
+            <p class="landing-tagline">Tu música, sin interrupciones.</p>
+
+            <section class="landing-section">
+                <h2>¿Cómo funciona?</h2>
+                <p>NoBreak es un <strong>reproductor de música local</strong>. Descarga la app de escritorio, elige la carpeta donde tienes tu música, y accede a tu biblioteca desde aquí en el navegador.</p>
+                <p>Tu música <strong>nunca sale de tu ordenador</strong> — esta web es solo la interfaz que se conecta a la app que tienes corriendo en tu PC. Ni anuncios, ni telemetría, ni dependencia de catálogos de terceros.</p>
+            </section>
+
+            <section class="landing-section landing-download">
+                <h2>Descargar la app</h2>
+                <p>Necesitas tener la app de escritorio corriendo en el ordenador donde está tu música. Descarga el portable de Windows, ábrelo y elige tu carpeta.</p>
+                <a id="landing-download" class="landing-download-btn"
+                   href="https://github.com/JimenaSuarVald/NoBreak/releases/latest/download/NoBreak-portable.exe"
+                   download>
+                    Descargar NoBreak para Windows
+                </a>
+                <p class="landing-download-hint">~71&nbsp;MB · portable, no requiere instalación</p>
+            </section>
+
+            <section class="landing-section">
+                <h2>Sobre NoBreak</h2>
+                <p>Disfruta de tu música sin anuncios constantes ni interrupciones molestas.</p>
+                <p>La filosofía de este software es tener un acercamiento a la música de manera accesible y sencilla, sin empresas predatorias que utilicen sus monopolios multinacionales para determinar cómo la industria musical ha de manejarse.</p>
+                <p>Hecho por estudiantes sin ánimo de lucro para el disfrute del usuario.</p>
+            </section>
+
+            <section class="landing-section landing-collaborators">
+                <h2>Colaboradores</h2>
+                <ul>
+                    <li>Jimena Suárez-Valdés</li>
+                    <li>Diego Enriquez Carrera</li>
+                    <li>Sara Román Plaza</li>
+                    <li>Angel Yang</li>
+                </ul>
+            </section>
+        </main>
+    </section>
+
     <!-- LOGIN SCREEN -->
-    <section id="login-screen" class="screen">
+    <section id="login-screen" class="screen hidden">
         <div class="login-card">
             <h1>NoBreak</h1>
             <p class="muted">Inicia sesión para acceder a tu música.</p>
@@ -442,7 +490,7 @@
                         <span class="np-btn-num">10</span>
                     </button>
                     <button id="btn-play" class="np-btn np-btn-main" title="Reproducir" aria-label="Reproducir o pausar">
-                        <svg id="icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M5 3v18l16-9z"/></svg>
+                        <svg id="icon-play" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8 4v16l12-8z"/></svg>
                         <svg id="icon-pause" class="hidden" viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
                     </button>
                     <button id="btn-fwd10" class="np-btn np-skip" title="Adelante 10 s" aria-label="Adelante 10 segundos">

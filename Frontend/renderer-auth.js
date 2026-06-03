@@ -23,7 +23,7 @@ function setupPasswordToggles() {
 // Muestra una de las pantallas de auth (login | register | photo) y oculta
 // las demás. Las pantallas funcionales (folder, app) se gestionan aparte.
 function showAuthScreen(which) {
-    for (const id of ['login-screen', 'register-screen', 'photo-screen', 'folder-screen']) {
+    for (const id of ['landing-screen', 'login-screen', 'register-screen', 'photo-screen', 'folder-screen']) {
         $(id)?.classList.toggle('hidden', id !== which + '-screen');
     }
     $('app-screen')?.classList.add('hidden');
@@ -38,6 +38,8 @@ function setupAuthNavLinks() {
         e.preventDefault();
         showAuthScreen('login');
     });
+    // Landing → login (botón "Iniciar sesión" arriba a la derecha).
+    $('landing-login-btn')?.addEventListener('click', () => showAuthScreen('login'));
 }
 
 function applyTheme(theme) {

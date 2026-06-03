@@ -6,3 +6,6 @@
 dist/
 build/
 out/
+
+# Cache local de wrangler (autenticación, builds, assets temp).
+.wrangler/

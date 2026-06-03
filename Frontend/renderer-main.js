@@ -46,8 +46,9 @@
         if (typeof clearSession === 'function') clearSession();
     }
 
-    // Primera vez sin usuarios → arranca en la pantalla de registro.
-    const firstRun = !(await window.api.hasUser());
-    if (firstRun) showAuthScreen('register');
-    else           showAuthScreen('login');
+    // No logueado → landing. Desde la landing, el botón "Iniciar sesión" de
+    // arriba a la derecha lleva al login. firstRun ya no fuerza register —
+    // el usuario decide desde la landing si registrarse (vía login → enlace
+    // "Crear cuenta") o descargar la app primero.
+    showAuthScreen('landing');
 })();

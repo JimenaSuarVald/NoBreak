@@ -89,15 +89,46 @@
         }),
         cloudRelayDiagnostics: async () => ({ running: false, lastOk: null, lastError: null }),
 
-        // Zoom: en navegador NO hay equivalente real al webFrame.setZoomFactor
-        // de Electron. document.body.style.zoom funciona en Chromium/Edge pero
-        // puede dejar layout raro a tamaños extremos. Para zoom serio el
-        // usuario tiene Ctrl + / Ctrl − del navegador.
+        // Zoom: emula webFrame.setZoomFactor de Electron sin descuadrar el
+        // layout. document.body.style.zoom escala el render pero el viewport
+        // no se ajusta, así que el #app-screen (100vh) se sale por debajo.
+        //
+        // Truco: transform: scale(f) al body + width/height = (100/f)vw/vh.
+        // El body en CSS pasa a ser (100/f)% del viewport y, al aplicar el
+        // scale(f), visualmente vuelve a llenar exactamente el viewport.
+        // Sus hijos calculan tamaños en CSS pixels del body (más pequeños)
+        // y se rinden al tamaño visual correcto. #app-screen usa 100% para
+        // seguir al body (no 100vh).
+        //
+        // origin 0 0 (top-left) para que el zoom expanda hacia abajo/derecha.
+        // html background se pinta donde body no llega (zoom > 1 → body
+        // ocupa (100/f)% del viewport — el resto lo cubre el html).
         setZoomFactor: (factor) => {
             const f = Math.max(0.5, Math.min(3, Number(factor) || 1));
-            document.body.style.zoom = String(f);
+            // Limpieza de la versión anterior por si quedó style.zoom en
+            // .app-content o #profile-view de un Frontend cacheado.
+            for (const sel of ['.app-content', '#profile-view']) {
+                const el = document.querySelector(sel);
+                if (el && el.style.zoom) el.style.zoom = '';
+            }
+            if (document.body.style.zoom) document.body.style.zoom = '';
+            const b = document.body;
+            if (Math.abs(f - 1) < 0.001) {
+                b.style.transform = '';
+                b.style.transformOrigin = '';
+                b.style.width = '';
+                b.style.height = '';
+            } else {
+                b.style.transformOrigin = '0 0';
+                b.style.transform = 'scale(' + f + ')';
+                b.style.width = (100 / f) + 'vw';
+                b.style.height = (100 / f) + 'vh';
+            }
             return f;
         },
-        getZoomFactor: () => parseFloat(document.body.style.zoom) || 1,
+        getZoomFactor: () => {
+            const m = (document.body.style.transform || '').match(/scale\(([\d.]+)\)/);
+            return m ? parseFloat(m[1]) : 1;
+        },
     };
 })();

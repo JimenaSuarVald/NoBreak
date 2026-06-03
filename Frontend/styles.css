@@ -32,6 +32,10 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; height: 100%; }
+/* html: el background es necesario cuando setZoomFactor aplica un
+   transform: scale al body — el body puede quedar con dimensiones
+   inferiores al viewport y la zona "fuera" la pinta el html. */
+html { background: var(--bg); }
 
 body {
     background: var(--bg);
@@ -59,7 +63,7 @@ body {
     margin: 6px 0;
 }
 
-.screen { width: 100%; height: 100vh; }
+.screen { width: 100%; height: 100%; }
 
 /* --- Login / folder card ------------------------------------------------ */
 /* flex-direction column + gap permite apilar la card y la línea "¿No tienes
@@ -212,10 +216,15 @@ body {
    Importante: usar `flex: 1` (basis 0) en el área central — con basis auto
    el contenido enorme del grid empuja al resto por debajo de su tamaño
    natural y el header/footer/toolbar acaban clipados. */
+/* height: 100% en vez de 100vh — el body puede tener un transform: scale
+   con dimensiones inversas (web-shim.setZoomFactor) para emular el zoom
+   del Electron sin descuadrar. Usando 100vh, el #app-screen quedaba
+   anclado al viewport real ignorando la escala del body, así que al
+   zoomear el reproductor caía debajo del fold. Con 100% sigue al body. */
 #app-screen {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: 100%;
 }
 #main-grid,
 #artist-view,
@@ -1246,7 +1255,9 @@ body {
         color-mix(in srgb, var(--fg) 18%, transparent) 100%
     );
 }
-/* Thumb: Chromium/Edge */
+/* Thumb: Chromium/Edge. margin-top centra el thumb (11px) sobre el track
+   (3px) — sin esto, Chromium alinea el thumb por baseline del input y el
+   thumb se ve un poco caído. Cálculo: (track 3 − thumb 11) / 2 = −4px. */
 .np-slider::-webkit-slider-thumb,
 .album-size-slider-row input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -1259,6 +1270,7 @@ body {
     cursor: pointer;
     transition: transform 0.12s ease;
     box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
+    margin-top: -4px;
 }
 .np-slider::-webkit-slider-thumb:hover,
 .album-size-slider-row input[type="range"]::-webkit-slider-thumb:hover {
@@ -2983,3 +2995,140 @@ body {
     border: 2px solid transparent;
 }
 *::-webkit-scrollbar-corner { background: transparent; }
+
+/* --- Landing screen (web pública) ----------------------------------------
+   Primera pantalla para visitantes no logueados. Header con marca a la
+   izquierda y botón de login a la derecha; contenido centrado con max-width
+   para legibilidad; secciones apiladas verticalmente. */
+#landing-screen.screen {
+    /* Anula el flex centered de .screen para poder hacer scroll vertical
+       en pantallas pequeñas. */
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow-y: auto;
+    background: var(--bg);
+}
+.landing-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-elev);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.landing-brand {
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: var(--fg);
+}
+.landing-login-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 9px 20px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: filter 0.12s ease, transform 0.12s ease;
+}
+.landing-login-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.landing-login-btn:active { transform: translateY(0); }
+
+.landing-main {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 64px;
+}
+.landing-title {
+    font-size: 56px;
+    font-weight: 900;
+    letter-spacing: -1px;
+    margin: 0 0 6px;
+    color: var(--fg);
+    text-align: center;
+}
+.landing-tagline {
+    font-size: 18px;
+    color: var(--fg-dim);
+    text-align: center;
+    margin: 0 0 40px;
+}
+.landing-section {
+    margin: 0 0 36px;
+    padding: 24px 0;
+    border-top: 1px solid var(--line);
+}
+.landing-section:last-of-type { border-bottom: 1px solid var(--line); }
+.landing-section h2 {
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 12px;
+    color: var(--fg);
+}
+.landing-section p {
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--fg);
+    margin: 0 0 12px;
+}
+.landing-section p:last-child { margin-bottom: 0; }
+.landing-section strong { color: var(--accent); font-weight: 700; }
+
+.landing-download {
+    text-align: center;
+}
+.landing-download h2 { text-align: left; }
+.landing-download p { text-align: left; }
+.landing-download-btn {
+    display: inline-block;
+    margin: 16px 0 8px;
+    padding: 14px 32px;
+    background: var(--accent);
+    color: #000;
+    text-decoration: none;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 16px;
+    transition: filter 0.12s ease, transform 0.12s ease;
+}
+.landing-download-btn:hover { filter: brightness(1.1); transform: translateY(-2px); }
+.landing-download-hint {
+    font-size: 12px !important;
+    color: var(--fg-dim) !important;
+    text-align: center !important;
+    margin-top: 4px !important;
+}
+
+.landing-collaborators ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+}
+.landing-collaborators li {
+    padding: 10px 14px;
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    font-size: 14px;
+    color: var(--fg);
+}
+
+/* En móvil reducimos paddings y tamaño del título. */
+@media (max-width: 600px) {
+    .landing-header { padding: 12px 16px; }
+    .landing-main { padding: 32px 16px 48px; }
+    .landing-title { font-size: 40px; }
+    .landing-tagline { font-size: 16px; margin-bottom: 28px; }
+    .landing-section { margin-bottom: 24px; padding: 20px 0; }
+}

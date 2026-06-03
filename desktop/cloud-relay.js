@@ -1,19 +1,15 @@
-// desktop/cloud-relay.js — Heartbeat al Worker (hito C.1).
+// desktop/cloud-relay.js — Heartbeat al Worker.
 //
-// Cada 60 segundos, si el .exe está vinculado, envía POST
-// /api/devices/heartbeat con la URL del tunnel actual (la pega el usuario en
-// Ajustes → NoBreak Cloud → "URL del tunnel").
+// Modelo simplificado: cada 60s manda { tunnelUrl, tunnelSecret } al
+// Worker para que sepa adónde proxear las peticiones del frontend. NO hay
+// auth de heartbeat por ahora (alcance: 1 PC, una sola tunnel; cualquiera
+// que conozca la URL del Worker puede pegar al endpoint, pero solo cambia
+// la fila única de routing, no expone datos de usuario).
 //
-// Esto NO proxea peticiones todavía — sólo registra "estoy vivo y mi tunnel
-// está en X" para que el Worker pueda en hito C.2 enrutar tráfico al .exe
-// correcto. Mientras no se implemente ese proxy, la información ya es útil
-// para mostrar "online/offline" en la UI del cloud.
-//
-// Falla silenciosamente (log, no excepción) — si el Worker está caído o la
-// red no funciona, el .exe sigue operativo en local.
+// Falla silenciosamente (log, no excepción).
 
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;
-const HEARTBEAT_RETRY_MS    = 15 * 1000;   // si falló, reintenta a los 15 s
+const HEARTBEAT_RETRY_MS    = 15 * 1000;
 
 let cloud = null;
 let timer = null;
@@ -22,9 +18,7 @@ let lastError = null;
 
 function start(cloudModule) {
     cloud = cloudModule;
-    if (timer) return;  // ya arrancado
-    // Pequeño delay inicial para no pegarle al Worker en el mismo instante
-    // que se inicia el resto de la app.
+    if (timer) return;
     timer = setTimeout(tick, 3000);
     console.log('[relay] heartbeat client arrancado');
 }
@@ -35,36 +29,21 @@ function stop() {
 
 async function tick() {
     timer = null;
-    const status = cloud?.getStatus?.();
-    if (!status || !status.linked) {
-        // No vinculado — no hay nada que hacer. Reintenta en 1 min por si el
-        // usuario vincula sin reiniciar.
+    const tunnelUrl = cloud?.getTunnelUrl?.() || null;
+    if (!tunnelUrl) {
+        // Sin tunnel URL configurada no hay nada que publicar — el usuario
+        // todavía no la ha pegado en Ajustes. Reintenta en 1 min.
         timer = setTimeout(tick, HEARTBEAT_INTERVAL_MS);
         return;
     }
-
-    const tunnelUrl = cloud.getTunnelUrl?.() || null;
-    const machineToken = cloud.getMachineToken?.();
-    if (!machineToken) {
-        // estado raro: linked pero sin token. Re-intenta más tarde.
-        timer = setTimeout(tick, HEARTBEAT_INTERVAL_MS);
-        return;
-    }
-    // Aseguramos el tunnel_secret existe antes del primer heartbeat. Si ya
-    // estaba (instalaciones previas), se reutiliza; si no, se genera ahora.
+    // Aseguramos el tunnel_secret existe antes del primer heartbeat.
     const tunnelSecret = cloud.ensureTunnelSecret?.() || null;
 
     try {
-        const r = await fetch(cloud.CLOUD_URL + '/api/devices/heartbeat', {
+        const r = await fetch(cloud.CLOUD_URL + '/_w/heartbeat', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + machineToken,
-            },
-            body: JSON.stringify({
-                tunnelUrl: tunnelUrl || undefined,
-                tunnelSecret: tunnelSecret || undefined,
-            }),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tunnelUrl, tunnelSecret }),
         });
         if (!r.ok) {
             const data = await r.json().catch(() => ({}));

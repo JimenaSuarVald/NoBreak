@@ -389,11 +389,6 @@ function registerIpc() {
   // El renderer pregunta estado, reclama códigos y desvincula. El
   // machine_token nunca cruza el bridge IPC — sólo el resumen.
   ipcMain.handle('cloud:status', () => cloud.getStatus());
-  ipcMain.handle('cloud:pair',   async (_e, code, label) => {
-    try { return { ok: true, status: await cloud.claimCode(code, label) }; }
-    catch (e) { return { ok: false, error: e.message || String(e) }; }
-  });
-  ipcMain.handle('cloud:unlink', () => cloud.unlink());
   ipcMain.handle('cloud:setTunnelUrl', (_e, url) => {
     try { return { ok: true, status: cloud.setTunnelUrl(url) }; }
     catch (e) { return { ok: false, error: e.message || String(e) }; }
