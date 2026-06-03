@@ -1,0 +1,8 @@
+# Binarios y artefactos de build (electron-packager / electron-builder).
+# El NoBreak-*.exe portable pesa >70 MB; GitHub avisa a partir de 50 MB
+# y rechaza por encima de 100 MB. Lo regeneras con `npm run dist` cuando
+# necesites una nueva release.
+*.exe
+dist/
+build/
+out/
