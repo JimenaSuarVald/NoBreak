@@ -15,6 +15,7 @@ const artistinfo = require('./artistinfo');
 const lastfm = require('./lastfm');
 const musicbrainz = require('./musicbrainz');
 const cloud = require('./cloud');
+const cloudRelay = require('./cloud-relay');
 
 const PORT = 8080;
 const HOST = '127.0.0.1';
@@ -106,6 +107,9 @@ function build() {
     }
     try {
       auth.createUser(username, password, { email });
+      // Avisa al Worker para que actualice user_routes sin esperar al
+      // próximo heartbeat (binding cuenta↔servidor "instantáneo").
+      cloudRelay.kick?.();
       res.status(201).json({ ok: true });
     } catch (e) {
       if (/UNIQUE constraint/i.test(e.message)) {

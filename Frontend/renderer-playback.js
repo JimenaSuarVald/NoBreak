@@ -462,7 +462,10 @@ async function ensureShuffleQueueTopup() {
 function playTrack(track) {
     currentPlayingTrack = track || null;
     const audio = $('audio');
-    audio.src = API_BASE + '/stream/' + track.id + '?t=' + encodeURIComponent(token);
+    // <audio src> no acepta headers, hostId va como ?h= (multi-host fase 4).
+    let streamUrl = API_BASE + '/stream/' + track.id + '?t=' + encodeURIComponent(token);
+    if (window.NB_HOST_ID) streamUrl += '&h=' + encodeURIComponent(window.NB_HOST_ID);
+    audio.src = streamUrl;
     audio.play().catch(() => { /* autoplay may need a user gesture */ });
     $('np-title').textContent = track.titulo || '—';
     const bits = [];

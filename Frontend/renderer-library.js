@@ -15,19 +15,25 @@ async function doLogin(user, pass) {
     const t = await res.json();
     token = t.sessionToken;
     username = t.username;
+    // hostId / hostLabel vienen del Worker (lo inyecta tras resolver
+    // user_routes). El frontend los necesita para añadir X-NoBreak-Host en
+    // todas las requests posteriores.
+    if (t.hostId) {
+        window.NB_HOST_ID = t.hostId;
+        window.NB_HOST_LABEL = t.hostLabel || null;
+    }
     saveSession(t);
 }
 
-// Persistir sesión en localStorage para sobrevivir al reload del navegador
-// (clave en uso remoto: el usuario abre el tunnel y refresca → no debería
-// quedar deslogueado). Sólo se guarda en web; en Electron es no-op porque
-// el preload no expone localStorage al main, pero window.localStorage existe.
+// Persistir sesión en localStorage para sobrevivir al reload del navegador.
 function saveSession(payload) {
     try {
         localStorage.setItem('nobreak-session', JSON.stringify({
             token: payload.sessionToken,
             username: payload.username,
             expiresAt: payload.expiresAt || null,
+            hostId: payload.hostId || null,
+            hostLabel: payload.hostLabel || null,
         }));
     } catch {}
 }
@@ -41,12 +47,18 @@ function loadSession() {
             localStorage.removeItem('nobreak-session');
             return null;
         }
+        if (s.hostId) {
+            window.NB_HOST_ID = s.hostId;
+            window.NB_HOST_LABEL = s.hostLabel || null;
+        }
         return s;
     } catch { return null; }
 }
 
 function clearSession() {
     try { localStorage.removeItem('nobreak-session'); } catch {}
+    window.NB_HOST_ID = null;
+    window.NB_HOST_LABEL = null;
 }
 
 function setupLoginForm() {
@@ -70,8 +82,8 @@ function setupLoginForm() {
     };
 }
 
-// Registro: usuario + email + password (con confirmación). Tras crear, hace
-// login automático y dirige a la pantalla de foto de perfil.
+// Registro: usuario + email + password. El Worker auto-resuelve el host
+// (proxy bobo hacia el único .exe con heartbeat reciente).
 function setupRegisterForm() {
     $('register-form').onsubmit = async (e) => {
         e.preventDefault();
@@ -92,9 +104,16 @@ function setupRegisterForm() {
         const submitBtn = $('register-submit');
         submitBtn.disabled = true;
         try {
-            await window.api.register(user, pass, email);
+            const r = await fetch(API_BASE + '/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: user, password: pass, email }),
+            });
+            if (!r.ok) {
+                const j = await r.json().catch(() => ({}));
+                throw new Error(j.error || 'No se pudo crear la cuenta');
+            }
             await doLogin(user, pass);
-            // Saltar a la pantalla de foto de perfil con la sesión activa.
             showAuthScreen('photo');
         } catch (err) {
             errEl.textContent = err.message || String(err);
@@ -269,14 +288,18 @@ function flushListen(sync = false) {
     if (newPlay) _listen.pendingNewPlay = false;
     if (!artist || ms < 1000 || !token) return;
     const body = JSON.stringify({ artist, ms, trackId, newPlay });
+    // sendBeacon no acepta headers ⇒ ?h= en la URL.
+    const hQ = window.NB_HOST_ID ? '&h=' + encodeURIComponent(window.NB_HOST_ID) : '';
     if (sync && navigator.sendBeacon) {
         const blob = new Blob([body], { type: 'application/json' });
-        navigator.sendBeacon(API_BASE + '/api/listen?t=' + encodeURIComponent(token), blob);
+        navigator.sendBeacon(API_BASE + '/api/listen?t=' + encodeURIComponent(token) + hQ, blob);
         return;
     }
+    const headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    if (window.NB_HOST_ID) headers['X-NoBreak-Host'] = window.NB_HOST_ID;
     fetch(API_BASE + '/api/listen', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        headers,
         body,
         keepalive: true,
     }).catch(() => {});
@@ -324,9 +347,11 @@ function startScrobbleForTrack(track) {
     };
     if (!token || !track?.titulo || !track?.artista) return;
     // "Now playing" inmediato — informativo, no cuenta como scrobble.
+    const npHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    if (window.NB_HOST_ID) npHeaders['X-NoBreak-Host'] = window.NB_HOST_ID;
     fetch(API_BASE + '/api/lastfm/now-playing', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        headers: npHeaders,
         body: JSON.stringify({
             artist: track.artista, track: track.titulo, album: track.album,
             durationMs: track.durationMs,
@@ -343,9 +368,11 @@ function maybeScrobble() {
     const threshold = Math.min(dur / 2, 4 * 60 * 1000);
     if (s.listenedMs < threshold) return;
     s.scrobbled = true;
+    const scrHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token };
+    if (window.NB_HOST_ID) scrHeaders['X-NoBreak-Host'] = window.NB_HOST_ID;
     fetch(API_BASE + '/api/lastfm/scrobble', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        headers: scrHeaders,
         body: JSON.stringify({
             artist: s.track.artista, track: s.track.titulo, album: s.track.album,
             startedAt: s.startedAt, durationMs: s.track.durationMs,
@@ -436,7 +463,7 @@ async function refreshCloudUi() {
                 }
             } catch { tunnelStatus.textContent = 'Heartbeat: sin diagnóstico.'; }
         } else {
-            tunnelStatus.textContent = 'Pega la URL del tunnel cloudflared (https://…trycloudflare.com).';
+            tunnelStatus.textContent = 'La URL se detecta sola al arrancar la app (cloudflared). Sólo pega una manual si quieres usar otro túnel.';
         }
     }
 }
@@ -798,10 +825,14 @@ function syncToolbarFor(type) {
 
 // --- API helpers -----------------------------------------------------------
 async function apiCall(path, opts = {}) {
-    const res = await fetch(API_BASE + path, {
-        ...opts,
-        headers: { 'Authorization': 'Bearer ' + token, ...(opts.headers || {}) },
-    });
+    const headers = {
+        'Authorization': 'Bearer ' + token,
+        ...(opts.headers || {}),
+    };
+    if (window.NB_HOST_ID && !headers['X-NoBreak-Host']) {
+        headers['X-NoBreak-Host'] = window.NB_HOST_ID;
+    }
+    const res = await fetch(API_BASE + path, { ...opts, headers });
     return res;
 }
 
@@ -831,7 +862,11 @@ async function apiJson(path, opts) {
 
 function coverUrlFor(serverPath) {
     if (!serverPath) return null;
-    return API_BASE + serverPath + '?t=' + encodeURIComponent(token);
+    // <img src> no permite headers custom, así que el hostId va como ?h=
+    // El Worker acepta tanto el header X-NoBreak-Host como ?h= para el routing.
+    let url = API_BASE + serverPath + '?t=' + encodeURIComponent(token);
+    if (window.NB_HOST_ID) url += '&h=' + encodeURIComponent(window.NB_HOST_ID);
+    return url;
 }
 
 // --- Library load + search -------------------------------------------------

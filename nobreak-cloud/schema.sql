@@ -1,23 +1,30 @@
--- Schema D1 del Worker `nobreak-cloud` (post-rediseño fase 4).
+-- Schema D1 del Worker `nobreak-cloud` (multi-host).
 --
--- El Worker es un proxy transparente, NO un servicio de cuentas. Por eso
--- el schema es mínimo: una tabla `devices` con una sola fila ('primary')
--- que guarda la tunnel_url + tunnel_secret publicada por el heartbeat
--- del .exe. No hay usuarios, sesiones ni pairing — las cuentas viven en
--- el SQLite del .exe y se acceden vía proxy.
+-- El Worker es un proxy que enruta tráfico de la web a múltiples PCs
+-- (cada uno con su `host_id` único). Las cuentas viven en cada `.exe`,
+-- el Worker solo guarda el directorio routing username → host.
 --
 -- Aplicar con: wrangler d1 execute nobreak-db --remote --file=schema.sql
 -- Idempotente (CREATE TABLE IF NOT EXISTS).
 
-CREATE TABLE IF NOT EXISTS devices (
-    device_id     TEXT PRIMARY KEY,
-    created_at    INTEGER NOT NULL,
-    last_seen_at  INTEGER,
-    -- URL pública del .exe (cloudflared, ngrok, etc). El Worker la lee
-    -- cada vez que tiene que proxear una request.
+CREATE TABLE IF NOT EXISTS hosts (
+    host_id       TEXT PRIMARY KEY,
+    label         TEXT NOT NULL,
     tunnel_url    TEXT,
-    -- Secreto compartido .exe↔Worker para autenticar requests proxeadas.
-    -- El .exe lo genera localmente, lo manda en heartbeat; el Worker lo
-    -- reenvía como header X-NoBreak-Tunnel-Secret en cada proxy.
-    tunnel_secret TEXT
+    tunnel_secret TEXT,
+    created_at    INTEGER NOT NULL,
+    last_seen_at  INTEGER
 );
+
+-- Directorio username → host. Se reconcilia desde el heartbeat del .exe
+-- (cada .exe manda en su POST /_w/heartbeat la lista de cuentas que tiene
+-- en su SQLite local). También /auth/register y /auth/login lo upsertan
+-- en caliente cuando el flujo pasa por el Worker. El Worker lo lee en
+-- /auth/login para enrutar al .exe correspondiente.
+CREATE TABLE IF NOT EXISTS user_routes (
+    username      TEXT PRIMARY KEY,
+    host_id       TEXT NOT NULL,
+    created_at    INTEGER NOT NULL,
+    FOREIGN KEY (host_id) REFERENCES hosts(host_id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_user_routes_host ON user_routes(host_id);

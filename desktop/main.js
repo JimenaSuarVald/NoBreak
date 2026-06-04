@@ -40,6 +40,7 @@ const webserver = require('./webserver');
 const musicbrainz = require('./musicbrainz');
 const cloud = require('./cloud');
 const cloudRelay = require('./cloud-relay');
+const tunnel = require('./tunnel');
 
 let mainWindow = null;
 let watcher = null;
@@ -72,11 +73,16 @@ function appCoverDir() {
  * Returns null if neither exists; the API still works without static serving.
  */
 function findWebDir() {
-  // El portable .exe es SOLO la app de escritorio. El frontend web se
-  // distribuye aparte (carpeta Frontend/ del repo, pensada para subir a
-  // Cloudflare Pages u otro hosting estático). Por eso devolvemos null —
-  // el HTTP server interno no monta static y la ruta / responde con el
-  // placeholder "NoBreak vault activo" del fallback.
+  // En dev (npm start desde el repo) servimos Frontend/ del repo para poder
+  // usar la app entera desde 127.0.0.1:8080 sin pasar por el Worker — útil
+  // cuando la red bloquea el túnel (universidades, redes corporativas) o
+  // cuando se quiere probar local sin levantar cloudflared.
+  // En el .exe packagiado no existe esa carpeta hermana, así que devolvemos
+  // null y / responde con el placeholder "NoBreak vault activo".
+  const devFrontend = path.join(__dirname, '..', 'Frontend');
+  try {
+    if (fs.existsSync(path.join(devFrontend, 'index.html'))) return devFrontend;
+  } catch {}
   return null;
 }
 
@@ -259,6 +265,9 @@ function registerIpc() {
   ipcMain.handle('auth:register', (_e, username, password, email) => {
     try {
       auth.createUser(username, password, { email });
+      // Avisa al Worker para que actualice user_routes sin esperar al
+      // próximo heartbeat de 60s (binding cuenta↔servidor "instantáneo").
+      cloudRelay.kick?.();
       return { ok: true };
     } catch (e) {
       if (/UNIQUE constraint/i.test(e.message)) {
@@ -479,8 +488,28 @@ app.whenReady().then(async () => {
   console.log('[main] db ready');
   cloud.init(app.getPath('userData'));
   console.log('[main] cloud init, url=', cloud.CLOUD_URL);
+  // Si el auto-túnel está activo, invalida la tunnelUrl persistida del run
+  // anterior antes de arrancar el relay. TryCloudflare emite una URL nueva
+  // cada vez que cloudflared arranca, así que la persistida ya está muerta
+  // — mandarla al Worker provoca 530 Origin DNS error hasta el siguiente
+  // heartbeat. Con null en disco, el relay salta los ticks hasta que
+  // tunnel.start() llame a cloud.setTunnelUrl(newUrl) + kick().
+  if (process.env.NOBREAK_DISABLE_AUTO_TUNNEL !== '1') {
+    try { cloud.setTunnelUrl(null); } catch (e) { console.warn('[main] reset tunnelUrl:', e.message); }
+  }
+
   cloudRelay.start(cloud);
   webserver.start({ webDir: findWebDir() });
+
+  // Auto-túnel TryCloudflare: lanza cloudflared.exe (lo descarga la primera
+  // vez) y publica la URL pública en cloud.setTunnelUrl(). Fallar es no
+  // fatal — la usuaria sigue pudiendo pegar URL manual en Ajustes.
+  tunnel.start({
+    cloud,
+    relay: cloudRelay,
+    port: webserver.PORT,
+    userData: app.getPath('userData'),
+  }).catch((e) => console.warn('[main] tunnel.start threw:', e?.message || e));
 
   registerIpc();
   buildMenu();
@@ -515,7 +544,16 @@ app.whenReady().then(async () => {
 
 app.on('window-all-closed', async () => {
   if (watcher) { await watcher.stop(); watcher = null; }
+  tunnel.stop();
+  cloudRelay.stop();
   webserver.stop();
   db.close();
   if (process.platform !== 'darwin') app.quit();
+});
+
+// Asegura que cloudflared se mata aunque la app salga por otra ruta (Cmd+Q
+// en macOS, app.quit() programático, etc.) sin disparar window-all-closed.
+app.on('before-quit', () => {
+  try { tunnel.stop(); } catch {}
+  try { cloudRelay.stop(); } catch {}
 });

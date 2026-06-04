@@ -1,19 +1,18 @@
-// desktop/cloud.js — Estado mínimo del vínculo .exe ↔ Worker NoBreak.
+// desktop/cloud.js — Estado del .exe como host del Worker.
 //
-// Modelo simplificado (sin cuentas cloud, sin pairing):
-//   - La web del Worker (frontend) reenvía /auth/* /api/* /stream/* al .exe.
-//   - Para evitar que alguien con la URL del tunnel pegue al .exe sin pasar
-//     por el Worker, el .exe genera un `tunnel_secret` aleatorio y lo
-//     publica al Worker en cada heartbeat. El Worker lo reenvía en cada
-//     proxy como header `X-NoBreak-Tunnel-Secret`. El webserver del .exe
-//     valida que el header coincide; si no, rechaza con 403.
-//   - El usuario pega manualmente la URL del cloudflared en Ajustes →
-//     "URL del tunnel". Persiste en `cloud-state.json` del userData.
+// Cada .exe se registra como un host independiente en el Worker:
+//   - hostId: UUID v4, generado la primera vez, persistido en cloud-state.json
+//   - label:  nombre humano usado en logs/diagnósticos del Worker
+//             (default = nombre de la cuenta del SO; editable en runtime)
+//   - tunnelUrl + tunnelSecret: lo que ya conocemos
 //
-// Override del backend para tests locales:
-//   NOBREAK_CLOUD_URL=http://localhost:8787   (wrangler dev)
+// El relay manda `{hostId, label, tunnelUrl, tunnelSecret, usernames}` en
+// cada heartbeat al Worker, que actualiza la fila del host en D1 y reconcilia
+// user_routes con la lista de cuentas locales (binding cuenta↔servidor
+// automático: el usuario nunca elige host).
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const crypto = require('crypto');
 
@@ -26,6 +25,11 @@ let cached = null;
 function init(userDataDir) {
     stateFile = path.join(userDataDir, 'cloud-state.json');
     cached = readDisk();
+    // En el primer arranque garantizamos hostId + label, así el relay puede
+    // mandar heartbeat sin tener que esperar a setLabel() del renderer.
+    ensureHostId();
+    ensureLabel();
+    ensureTunnelSecret();
 }
 
 function readDisk() {
@@ -46,8 +50,42 @@ function writeDisk(state) {
     cached = state;
 }
 
-// tunnel_secret: 64 hex chars generados localmente. Se publica al Worker
-// en cada heartbeat. El Worker lo reenvía en proxy → webserver del .exe.
+// --- host_id: UUID v4 estable ---------------------------------------------
+function ensureHostId() {
+    if (cached?.hostId) return cached.hostId;
+    const id = crypto.randomUUID();
+    cached = { ...(cached || {}), hostId: id };
+    writeDisk(cached);
+    return id;
+}
+function getHostId() { return cached?.hostId || ensureHostId(); }
+
+// --- label: nombre humano para el picker ----------------------------------
+// Default = nombre del usuario del SO + " - NoBreak". El usuario puede
+// cambiarlo desde Ajustes (IPC cloud:setLabel).
+function defaultLabel() {
+    try {
+        const u = os.userInfo().username || 'NoBreak';
+        return u.trim() + ' - NoBreak';
+    } catch { return 'NoBreak'; }
+}
+function ensureLabel() {
+    if (cached?.label) return cached.label;
+    const lbl = defaultLabel();
+    cached = { ...(cached || {}), label: lbl };
+    writeDisk(cached);
+    return lbl;
+}
+function getLabel() { return cached?.label || ensureLabel(); }
+function setLabel(newLabel) {
+    const clean = String(newLabel || '').trim().slice(0, 80);
+    if (!clean) throw new Error('Label vacío');
+    cached = { ...(cached || {}), label: clean };
+    writeDisk(cached);
+    return clean;
+}
+
+// --- tunnel_secret: random 32 bytes ---------------------------------------
 function ensureTunnelSecret() {
     if (cached?.tunnelSecret) return cached.tunnelSecret;
     const secret = crypto.randomBytes(32).toString('hex');
@@ -55,17 +93,10 @@ function ensureTunnelSecret() {
     writeDisk(cached);
     return secret;
 }
+function getTunnelSecret() { return cached?.tunnelSecret || null; }
 
-function getTunnelSecret() {
-    return cached?.tunnelSecret || null;
-}
-
-// URL pública del tunnel (cloudflared, ngrok, etc) que apunta a este .exe.
-// La pega el usuario en Ajustes — no la auto-detectamos.
-function getTunnelUrl() {
-    return cached?.tunnelUrl || null;
-}
-
+// --- tunnel_url: la pega el usuario en Ajustes ----------------------------
+function getTunnelUrl() { return cached?.tunnelUrl || null; }
 function setTunnelUrl(url) {
     const clean = (url == null || url === '') ? null : String(url).trim();
     if (clean && !/^https?:\/\//i.test(clean)) {
@@ -77,10 +108,12 @@ function setTunnelUrl(url) {
     return getStatus();
 }
 
-// Resumen seguro para el renderer. El tunnel_secret NO se expone.
+// Resumen seguro para el renderer (sin tunnel_secret).
 function getStatus() {
     return {
         cloudUrl: CLOUD_URL,
+        hostId: getHostId(),
+        label: getLabel(),
         tunnelUrl: cached?.tunnelUrl || null,
         hasTunnelSecret: !!cached?.tunnelSecret,
     };
@@ -88,6 +121,7 @@ function getStatus() {
 
 module.exports = {
     init, getStatus,
+    getHostId, getLabel, setLabel,
     getTunnelUrl, setTunnelUrl,
     ensureTunnelSecret, getTunnelSecret,
     CLOUD_URL,

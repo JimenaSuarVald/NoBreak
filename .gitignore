@@ -9,3 +9,9 @@ out/
 
 # Cache local de wrangler (autenticación, builds, assets temp).
 .wrangler/
+
+# Generado por desktop/copy-web.js (copia de Frontend/ embebida en el EXE).
+desktop/web/
+
+# Basura macOS.
+.DS_Store

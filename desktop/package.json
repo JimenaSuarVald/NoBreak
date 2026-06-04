@@ -11,7 +11,7 @@
     "rebuild": "electron-builder install-app-deps",
     "postinstall": "electron-builder install-app-deps",
     "predist": "node copy-web.js",
-    "dist": "electron-packager . NoBreak --platform=win32 --arch=x64 --out=dist --overwrite --prune=true"
+    "dist": "electron-builder --win"
   },
   "dependencies": {
     "better-sqlite3": "^11.3.0",
@@ -47,6 +47,9 @@
       "artistinfo.js",
       "lastfm.js",
       "musicbrainz.js",
+      "cloud.js",
+      "cloud-relay.js",
+      "tunnel.js",
       ".env",
       "src/**/*",
       "assets/**/*",
@@ -55,26 +58,24 @@
     "win": {
       "target": [
         {
-          "target": "nsis",
-          "arch": [
-            "x64"
-          ]
-        },
-        {
-          "target": "portable",
+          "target": "nsis-web",
           "arch": [
             "x64"
           ]
         }
       ]
     },
-    "portable": {
-      "artifactName": "NoBreak-${version}-portable.exe"
-    },
-    "nsis": {
+    "nsisWeb": {
+      "artifactName": "NoBreak-Setup.exe",
+      "appPackageUrl": "https://nobreak-cloud.jimenasuarezvaldesss.workers.dev/install/",
+      "differentialPackage": false,
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "perMachine": false
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NoBreak",
+      "deleteAppDataOnUninstall": false
     }
   }
 }

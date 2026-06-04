@@ -14,6 +14,14 @@ binding = "nobreak_db"
 database_name = "nobreak-db"
 database_id = "54d9c97a-1229-49d6-bf46-765f8f21263a"
 
+# Bucket R2 que aloja el instalador NoBreak-Setup.exe (stub ~1 MB) + su
+# payload comprimido NoBreak-*.nsis.7z (~50 MB). Se sirven a través de la
+# ruta `/install/<archivo>` del Worker. El nsis-web del .exe está
+# configurado para pedir el payload desde esta misma URL.
+[[r2_buckets]]
+binding = "nobreak_installer"
+bucket_name = "nobreak-installer"
+
 # Static assets (fase 4 paso 1): el Worker sirve la carpeta Frontend/ del
 # repo. Cloudflare comprueba primero si el path coincide con un fichero
 # estático y lo devuelve; si no coincide, ejecuta el fetch handler del

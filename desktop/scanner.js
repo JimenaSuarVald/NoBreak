@@ -79,6 +79,7 @@ async function scan(root, coverDir, progress) {
   );
 
   let scanned = 0, skipped = 0, errors = 0;
+  const seenPaths = new Set(files);
 
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
@@ -121,8 +122,22 @@ async function scan(root, coverDir, progress) {
     }
   }
 
-  if (progress) progress(`Escaneo terminado: ${scanned} nuevos · ${skipped} sin cambios · ${errors} errores`);
-  return { scanned, skipped, errors, total: files.length };
+  // Borra de la BD las pistas que ya no están en la carpeta seleccionada.
+  // Sin esto, al apuntar la biblioteca a una carpeta con menos música los
+  // álbumes antiguos seguirían apareciendo. FKs a liked_tracks / playlist_tracks
+  // / track_ratings tienen ON DELETE CASCADE.
+  let removed = 0;
+  const existingPaths = conn.prepare('SELECT path FROM tracks').all().map((r) => r.path);
+  const toRemove = existingPaths.filter((p) => !seenPaths.has(p));
+  if (toRemove.length) {
+    const del = conn.prepare('DELETE FROM tracks WHERE path = ?');
+    const tx = conn.transaction((paths) => { for (const p of paths) del.run(p); });
+    tx(toRemove);
+    removed = toRemove.length;
+  }
+
+  if (progress) progress(`Escaneo terminado: ${scanned} nuevos · ${skipped} sin cambios · ${removed} eliminados · ${errors} errores`);
+  return { scanned, skipped, removed, errors, total: files.length };
 }
 
 /** Saves a cover Buffer to {coverDir}/{sha1}.{ext} and returns the absolute path. */

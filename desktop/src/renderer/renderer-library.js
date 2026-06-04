@@ -406,7 +406,7 @@ async function refreshCloudUi() {
                 }
             } catch { tunnelStatus.textContent = 'Heartbeat: sin diagnóstico.'; }
         } else {
-            tunnelStatus.textContent = 'Pega la URL del tunnel cloudflared (https://…trycloudflare.com).';
+            tunnelStatus.textContent = 'La URL se detecta sola al arrancar la app (cloudflared). Sólo pega una manual si quieres usar otro túnel.';
         }
     }
 }

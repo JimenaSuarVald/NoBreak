@@ -1,12 +1,17 @@
 // desktop/cloud-relay.js — Heartbeat al Worker.
 //
-// Modelo simplificado: cada 60s manda { tunnelUrl, tunnelSecret } al
-// Worker para que sepa adónde proxear las peticiones del frontend. NO hay
-// auth de heartbeat por ahora (alcance: 1 PC, una sola tunnel; cualquiera
-// que conozca la URL del Worker puede pegar al endpoint, pero solo cambia
-// la fila única de routing, no expone datos de usuario).
+// Cada 60s manda { hostId, label, tunnelUrl, tunnelSecret, usernames } al
+// Worker para que sepa adónde proxear las peticiones del frontend y para
+// que reconcilie user_routes (username → host) con las cuentas que viven
+// en la SQLite local. Así el binding cuenta↔servidor es automático: el
+// usuario nunca ve un picker.
+//
+// Modelo de confianza: bind del .exe es 127.0.0.1, el tunnel hace forward
+// al loopback; no hay auth en /_w/heartbeat. Alcance: 1 PC = 1 .exe.
 //
 // Falla silenciosamente (log, no excepción).
+
+const auth = require('./auth');
 
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;
 const HEARTBEAT_RETRY_MS    = 15 * 1000;
@@ -27,6 +32,15 @@ function stop() {
     if (timer) { clearTimeout(timer); timer = null; }
 }
 
+// Re-arranca el siguiente tick "ya" (próximo loop), saltándose el delay
+// pendiente. Útil tras crear un usuario para que el Worker se entere antes
+// de los 60s estándar.
+function kick() {
+    if (!cloud) return;
+    if (timer) { clearTimeout(timer); timer = null; }
+    timer = setTimeout(tick, 100);
+}
+
 async function tick() {
     timer = null;
     const tunnelUrl = cloud?.getTunnelUrl?.() || null;
@@ -36,14 +50,22 @@ async function tick() {
         timer = setTimeout(tick, HEARTBEAT_INTERVAL_MS);
         return;
     }
-    // Aseguramos el tunnel_secret existe antes del primer heartbeat.
     const tunnelSecret = cloud.ensureTunnelSecret?.() || null;
+    const hostId = cloud.getHostId?.() || null;
+    const label  = cloud.getLabel?.()  || null;
+    if (!hostId || !label) {
+        timer = setTimeout(tick, HEARTBEAT_INTERVAL_MS);
+        return;
+    }
+    let usernames = [];
+    try { usernames = auth.listUsernames(); }
+    catch (e) { console.warn('[relay] listUsernames falló:', e?.message); }
 
     try {
         const r = await fetch(cloud.CLOUD_URL + '/_w/heartbeat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tunnelUrl, tunnelSecret }),
+            body: JSON.stringify({ hostId, label, tunnelUrl, tunnelSecret, usernames }),
         });
         if (!r.ok) {
             const data = await r.json().catch(() => ({}));
@@ -68,4 +90,4 @@ function getDiagnostics() {
     };
 }
 
-module.exports = { start, stop, getDiagnostics };
+module.exports = { start, stop, kick, getDiagnostics };

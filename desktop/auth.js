@@ -39,6 +39,12 @@ function hasAnyUser() {
   return db.get().prepare('SELECT COUNT(*) AS n FROM users').get().n > 0;
 }
 
+// Lista plana de usernames presentes en la SQLite local. La usa el heartbeat
+// del relay para que el Worker reconcilie user_routes (username → host).
+function listUsernames() {
+  return db.get().prepare('SELECT username FROM users').all().map(r => r.username);
+}
+
 function createUser(username, password, opts = {}) {
   const norm = normalizeUsername(username);
   if (!norm) throw new Error('username vacío');
@@ -154,7 +160,7 @@ function revokeSession(token) {
 }
 
 module.exports = {
-  hasAnyUser, createUser, verifyUser, userById, userByUsername,
+  hasAnyUser, listUsernames, createUser, verifyUser, userById, userByUsername,
   setProfilePhoto, setProfileBackground, setProfileFrame, patchUser,
   issueSession, verifySession, revokeSession,
 };
